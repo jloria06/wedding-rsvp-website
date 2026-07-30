@@ -25,15 +25,19 @@ frontend/.vite/
 frontend/coverage/
 *.tsbuildinfo
 
-# Runtime logs, uploads, and backups
+# Runtime logs and uploads
 logs/*
 !logs/.gitkeep
 uploads/*
 !uploads/.gitkeep
-backups/
 *.log
+
+# Database dumps, backups, and local credential scripts
+backups/
 *.sql
 *.sql.gz
+!database/*.sql
+database/*.local.sql
 
 # Visual Studio and IDE files
 .vs/
