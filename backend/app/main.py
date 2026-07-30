@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from app.api import api_router
+from app.api.router import api_router
 from app.core import (
     configure_logging,
     get_settings,
