@@ -1,6 +1,6 @@
-from pathlib import Path
 import os
 import sys
+from pathlib import Path
 
 from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine, text
@@ -40,12 +40,18 @@ def main() -> int:
         )
 
         with engine.connect() as connection:
-            result = connection.execute(text("""
+            result = (
+                connection.execute(
+                    text("""
                     SELECT
                         DATABASE() AS active_database,
                         CURRENT_USER() AS authenticated_account,
                         VERSION() AS mysql_version
-                    """)).mappings().one()
+                    """)
+                )
+                .mappings()
+                .one()
+            )
 
             print("[PASSED] SQLAlchemy connected to MySQL.")
             print(f"Database: {result['active_database']}")
