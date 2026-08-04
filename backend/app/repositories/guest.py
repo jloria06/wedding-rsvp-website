@@ -61,3 +61,20 @@ class GuestRepository:
         self.database_session.flush()
 
         return guest
+
+    def list_all(self) -> list[Guest]:
+        statement = (
+            select(Guest)
+            .options(
+                selectinload(Guest.rsvp),
+            )
+            .where(
+                Guest.deleted_at.is_(None),
+            )
+            .order_by(
+                Guest.last_name,
+                Guest.first_name,
+            )
+        )
+
+        return list(self.database_session.scalars(statement).all())
