@@ -1,102 +1,184 @@
-import { motion } from 'framer-motion'
+import { useState } from "react";
 
-const installedFeatures = [
-  'React and TypeScript',
-  'Vite development server',
-  'Tailwind CSS',
-  'React Router',
-  'TanStack Query',
-  'Axios',
-  'React Hook Form and Zod',
-  'Framer Motion',
-]
+import { InvitationVerificationForm } from "./components/InvitationVerificationForm";
+import { RSVPForm } from "./components/RSVPForm";
+import { WeddingNav } from "./components/WeddingNav";
+import type { GuestSummary, RSVPSubmissionResponse } from "./types/rsvp";
 
 function App() {
-  const appName =
-    import.meta.env.VITE_APP_NAME ?? 'Wedding Invitation'
+  const [verifiedGuest, setVerifiedGuest] = useState<GuestSummary | null>(null);
 
-  const appEnvironment =
-    import.meta.env.VITE_APP_ENV ?? 'development'
+  const [hasExistingRSVP, setHasExistingRSVP] = useState(false);
 
-  const apiBaseUrl =
-    import.meta.env.VITE_API_BASE_URL ??
-    'http://127.0.0.1:8000/api'
+  const [submissionResult, setSubmissionResult] =
+    useState<RSVPSubmissionResponse | null>(null);
+
+  function handleGuestVerified(
+    guest: GuestSummary,
+    existingRSVP: boolean,
+  ): void {
+    setVerifiedGuest(guest);
+    setHasExistingRSVP(existingRSVP);
+    setSubmissionResult(null);
+  }
+
+  function resetGuest(): void {
+    setVerifiedGuest(null);
+    setHasExistingRSVP(false);
+    setSubmissionResult(null);
+  }
+
+  if (!verifiedGuest) {
+    return (
+      <>
+        <WeddingNav
+          onRSVPClick={() => {
+            document.getElementById("invitation-heading")?.scrollIntoView({
+              behavior: "smooth",
+            });
+          }}
+        />
+
+        <main id="top">
+          <header className="wedding-header">
+            <p className="wedding-eyebrow">Together with their families</p>
+
+            <h1 className="couple-names">
+              John Paul
+              <span>&amp;</span>
+              Joyce
+            </h1>
+
+            <p className="wedding-subtitle">
+              We would be delighted to celebrate our wedding with you.
+            </p>
+
+            <div className="wedding-details" id="details">
+              <div>
+                <span className="detail-label">Date</span>
+                <strong>Coming Soon</strong>
+              </div>
+
+              <div>
+                <span className="detail-label">Ceremony</span>
+                <strong>Details Coming Soon</strong>
+              </div>
+
+              <div>
+                <span className="detail-label">Reception</span>
+                <strong>Details Coming Soon</strong>
+              </div>
+            </div>
+          </header>
+
+          <section className="welcome-section" id="celebration">
+            <p className="welcome-kicker">Our Celebration</p>
+
+            <h2>We can&apos;t wait to celebrate with you</h2>
+
+            <p>
+              Your presence would mean so much to us as we begin this new
+              chapter together. Please use your invitation code below to confirm
+              your attendance and RSVP details.
+            </p>
+          </section>
+
+          <InvitationVerificationForm onVerified={handleGuestVerified} />
+        </main>
+      </>
+    );
+  }
+
+  const guestName = [
+    verifiedGuest.first_name,
+    verifiedGuest.middle_name,
+    verifiedGuest.last_name,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  if (submissionResult) {
+    const attending = submissionResult.rsvp.status === "attending";
+
+    return (
+      <main>
+        <section className="confirmation-card">
+          <p className="welcome-kicker">RSVP Confirmed</p>
+
+          <h1>Thank you, {guestName}</h1>
+
+          <p className="confirmation-message">{submissionResult.message}</p>
+
+          <div className="confirmation-status">
+            <span>RSVP Status</span>
+
+            <strong>{attending ? "Attending" : "Not Attending"}</strong>
+          </div>
+
+          {attending ? (
+            <p>
+              We&apos;re looking forward to celebrating with you on our special
+              day.
+            </p>
+          ) : (
+            <p>
+              Thank you for letting us know. You&apos;ll be in our thoughts on
+              our special day.
+            </p>
+          )}
+
+          <button type="button" onClick={resetGuest}>
+            Finish
+          </button>
+        </section>
+      </main>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-powder-100 via-white to-powder-50 px-5 py-12 text-slate-800">
-      <motion.section
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mx-auto max-w-3xl rounded-3xl border border-powder-200 bg-white/90 p-7 shadow-xl shadow-powder-200/40 backdrop-blur sm:p-10"
-        aria-labelledby="page-title"
-      >
-        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-gold-500">
-          Local workstation
-        </p>
+    <main>
+      <section className="guest-welcome">
+        <p className="welcome-kicker">Invitation Verified</p>
 
-        <h1
-          id="page-title"
-          className="mt-3 font-serif text-4xl text-powder-900 sm:text-5xl"
-        >
-          {appName}
-        </h1>
+        <h1>Welcome, {guestName}</h1>
 
-        <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-          Phase 2 is running locally. This page verifies that the
-          frontend development toolchain is configured correctly
-          without any cloud services.
-        </p>
+        <p>We&apos;re so happy to celebrate this special day with you.</p>
 
-        <dl className="mt-8 grid gap-4 rounded-2xl bg-powder-50 p-5 sm:grid-cols-2">
+        <div className="guest-summary">
           <div>
-            <dt className="text-sm font-semibold text-slate-500">
-              Environment
-            </dt>
-            <dd className="mt-1 font-mono text-sm text-powder-800">
-              {appEnvironment}
-            </dd>
+            <span>Invitation</span>
+            <strong>{verifiedGuest.invitation_code}</strong>
           </div>
 
           <div>
-            <dt className="text-sm font-semibold text-slate-500">
-              Future local API
-            </dt>
-            <dd className="mt-1 break-all font-mono text-sm text-powder-800">
-              {apiBaseUrl}
-            </dd>
+            <span>Companion allowance</span>
+            <strong>{verifiedGuest.maximum_companions}</strong>
           </div>
-        </dl>
 
-        <h2 className="mt-8 font-serif text-2xl text-powder-900">
-          Installed frontend foundation
-        </h2>
-
-        <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-          {installedFeatures.map((feature) => (
-            <li
-              key={feature}
-              className="flex items-center gap-3 rounded-xl border border-powder-100 bg-white px-4 py-3"
-            >
-              <span
-                className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-powder-200 text-sm font-bold text-powder-800"
-                aria-hidden="true"
-              >
-                ✓
-              </span>
-
-              <span>{feature}</span>
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-8 rounded-2xl border border-dashed border-gold-400 bg-amber-50/60 p-5 text-sm leading-6 text-slate-700">
-          Vercel, Cloudflare, GitHub Actions, public domains, and
-          production services are intentionally not configured.
+          <div>
+            <span>RSVP status</span>
+            <strong>
+              {hasExistingRSVP ? "Response received" : "Awaiting response"}
+            </strong>
+          </div>
         </div>
-      </motion.section>
+
+        {hasExistingRSVP ? (
+          <p className="existing-rsvp-message">
+            You already submitted an RSVP. You may update your response below.
+          </p>
+        ) : null}
+      </section>
+
+      <RSVPForm guest={verifiedGuest} onSubmitted={setSubmissionResult} />
+
+      <div className="guest-actions">
+        <button type="button" onClick={resetGuest}>
+          Use another invitation
+        </button>
+      </div>
     </main>
-  )
+  );
 }
 
-export default App
+export default App;
