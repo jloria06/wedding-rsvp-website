@@ -82,35 +82,104 @@ const DEFAULT_WEDDING_CONFIG: ResolvedWeddingConfig = {
 };
 
 /* =========================================================
-   DECORATIVE COMPONENTS
+   FULL-WIDTH PHOTO DIVIDER
+
+   Each divider uses ONE dedicated image and appears between
+   specific ivory floral content sections.
+
+   Features:
+   - borderless full-width photography
+   - smooth fade-in as it enters the viewport
+   - subtle scroll parallax
+   - dark cinematic overlay for readable text
 ========================================================= */
 
-function OrnateFrame() {
+type PhotoDividerProps = {
+  image: string;
+  eyebrow: string;
+  title: string;
+  position?: string;
+};
+
+function PhotoDivider({
+  image,
+  eyebrow,
+  title,
+  position = "center",
+}: PhotoDividerProps) {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const [parallaxOffset, setParallaxOffset] = useState(0);
+
+  useEffect(() => {
+    let frameId = 0;
+
+    function updateParallax() {
+      const section = sectionRef.current;
+
+      if (!section) {
+        return;
+      }
+
+      const rect = section.getBoundingClientRect();
+      const viewportCenter = window.innerHeight / 2;
+      const sectionCenter = rect.top + rect.height / 2;
+
+      const normalized =
+        (viewportCenter - sectionCenter) /
+        Math.max(window.innerHeight + rect.height, 1);
+
+      const clamped = Math.max(-1, Math.min(1, normalized));
+
+      setParallaxOffset(clamped * 48);
+    }
+
+    function requestUpdate() {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(updateParallax);
+    }
+
+    updateParallax();
+
+    window.addEventListener("scroll", requestUpdate, {
+      passive: true,
+    });
+    window.addEventListener("resize", requestUpdate);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("scroll", requestUpdate);
+      window.removeEventListener("resize", requestUpdate);
+    };
+  }, []);
+
   return (
-    <div className="ornate-frame" aria-hidden="true">
-      <span className="ornate-frame__line ornate-frame__line--top" />
-      <span className="ornate-frame__line ornate-frame__line--bottom" />
-      <span className="ornate-frame__line ornate-frame__line--left" />
-      <span className="ornate-frame__line ornate-frame__line--right" />
+    <section
+      ref={sectionRef}
+      className="photo-divider reveal-on-scroll"
+      aria-label={title}
+    >
+      <div className="photo-divider__media" aria-hidden="true">
+        <img
+          src={image}
+          alt=""
+          style={{
+            objectPosition: position,
+            transform: `translate3d(0, ${parallaxOffset}px, 0) scale(1.1)`,
+          }}
+        />
+      </div>
 
-      <span className="ornate-frame__corner ornate-frame__corner--tl" />
-      <span className="ornate-frame__corner ornate-frame__corner--tr" />
-      <span className="ornate-frame__corner ornate-frame__corner--bl" />
-      <span className="ornate-frame__corner ornate-frame__corner--br" />
+      <div className="photo-divider__overlay" aria-hidden="true" />
 
-      <span className="ornate-frame__side ornate-frame__side--left" />
-      <span className="ornate-frame__side ornate-frame__side--right" />
-    </div>
-  );
-}
+      <div className="photo-divider__content">
+        <p>{eyebrow}</p>
+        <h2>{title}</h2>
 
-function SectionSeparator() {
-  return (
-    <div className="section-separator" aria-hidden="true">
-      <span />
-      <strong>♡</strong>
-      <span />
-    </div>
+        <span className="photo-divider__ornament" aria-hidden="true">
+          ♡
+        </span>
+      </div>
+    </section>
   );
 }
 
@@ -162,6 +231,26 @@ function App() {
     "/images/hero-5.jpg",
   ];
 
+  /*
+     FULL-WIDTH PHOTO DIVIDER ASSETS
+
+     Store these exact files in:
+     frontend/public/images/
+
+     Placement:
+     1 = after Our Story
+     2 = after Wedding Timeline
+     3 = after Entourage
+
+     These images are independent from the opening hero,
+     gallery, and story photos.
+  */
+  const scrollDividerImages = [
+    "/images/scroll-divider-1.jpg",
+    "/images/scroll-divider-2.jpg",
+    "/images/scroll-divider-3.jpg",
+  ];
+
   /* -------------------------------------------------------
      EXTERNAL PUBLIC DATA
      - /public/data/entourage.xlsx
@@ -196,6 +285,9 @@ function App() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
 
+  /* Loading screen shown before the invitation cover. */
+  const [siteReady, setSiteReady] = useState(false);
+
   /* -------------------------------------------------------
      CINEMATIC HERO STATE
   ------------------------------------------------------- */
@@ -221,6 +313,38 @@ function App() {
   const [hasExistingRSVP, setHasExistingRSVP] = useState(false);
   const [rsvpResponse, setRSVPResponse] =
     useState<RSVPSubmissionResponse | null>(null);
+
+  /* =======================================================
+     INITIAL LOADING SCREEN
+
+     Matches the reference video's ivory opening treatment.
+     It waits for the browser load event and keeps the loader
+     visible briefly so the transition feels intentional.
+  ======================================================= */
+
+  useEffect(() => {
+    let timer: number | undefined;
+
+    function finishLoading() {
+      timer = window.setTimeout(() => {
+        setSiteReady(true);
+      }, 850);
+    }
+
+    if (document.readyState === "complete") {
+      finishLoading();
+    } else {
+      window.addEventListener("load", finishLoading, { once: true });
+    }
+
+    return () => {
+      window.removeEventListener("load", finishLoading);
+
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, []);
 
   /* =======================================================
      LOAD: WEDDING CONFIG JSON
@@ -706,6 +830,24 @@ function App() {
     setInvitationOpened(true);
   }
 
+  if (!siteReady) {
+    return (
+      <main className="wedding-loader">
+        <div className="wedding-loader__mark">
+          <span>JP</span>
+          <strong>&</strong>
+          <span>J</span>
+        </div>
+
+        <p>OUR WEDDING INVITATION</p>
+
+        <div className="wedding-loader__line" aria-hidden="true">
+          <span />
+        </div>
+      </main>
+    );
+  }
+
   return (
     <>
       {/* ===================================================
@@ -727,7 +869,6 @@ function App() {
            PART 01: INVITATION COVER
         ================================================= */
         <main className="invitation-cover">
-          <OrnateFrame />
           <div className="invitation-cover__background" />
           <div className="invitation-cover__overlay" />
 
@@ -764,8 +905,6 @@ function App() {
            OPENED WEDDING WEBSITE
         ================================================= */
         <main className="wedding-page">
-          <OrnateFrame />
-
           {/* ===============================================
               FULLSCREEN PHOTO LIGHTBOX
           =============================================== */}
@@ -828,12 +967,15 @@ function App() {
           ) : null}
 
           {/* ===============================================
-              DECORATIVE PETALS
+              FALLING PETALS
+              Inspired by the supplied reference video.
           =============================================== */}
 
-          <div className="petal petal--1">✦</div>
-          <div className="petal petal--2">✧</div>
-          <div className="petal petal--3">✦</div>
+          <div className="falling-petals" aria-hidden="true">
+            {Array.from({ length: 20 }).map((_, index) => (
+              <span className="falling-petal" key={`falling-petal-${index}`} />
+            ))}
+          </div>
 
           {/* ===============================================
               FLOATING MUSIC CONTROL
@@ -1058,7 +1200,10 @@ function App() {
                 WELCOME INTRO + CLICKABLE PHOTO GALLERY
             ============================================= */}
 
-            <div id="welcome-intro" className="welcome-section__content">
+            <div
+              id="welcome-intro"
+              className="welcome-section__content floral-section"
+            >
               <div className="welcome-section__intro reveal-on-scroll reveal-heading">
                 <p className="welcome-section__eyebrow">John Paul & Joyce</p>
 
@@ -1108,13 +1253,11 @@ function App() {
             </div>
           </section>
 
-          <SectionSeparator />
-
           {/* ===============================================
               PART 04: OUR STORY
           =============================================== */}
 
-          <section id="story" className="story-section">
+          <section id="story" className="story-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>OUR STORY</p>
               <h2>
@@ -1175,13 +1318,24 @@ function App() {
             </div>
           </section>
 
-          <SectionSeparator />
+          {/* ===============================================
+              FULL-WIDTH PHOTO DIVIDER #1
+              Placement: after Our Story
+              No floral border by design.
+          =============================================== */}
+
+          <PhotoDivider
+            image={scrollDividerImages[0]}
+            eyebrow="OUR JOURNEY"
+            title="The days that became memories."
+            position="center center"
+          />
 
           {/* ===============================================
               PART 05: SAVE THE DATE + VENUES
           =============================================== */}
 
-          <section id="details" className="details-section">
+          <section id="details" className="details-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>THE BIG DAY</p>
               <h2 className="script-heading">Save the Date</h2>
@@ -1263,13 +1417,11 @@ function App() {
             </div>
           </section>
 
-          <SectionSeparator />
-
           {/* ===============================================
               PART 06: ANIMATED WEDDING TIMELINE
           =============================================== */}
 
-          <section id="timeline" className="timeline-section">
+          <section id="timeline" className="timeline-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>OUR WEDDING DAY</p>
               <h2 className="script-heading">Wedding Timeline</h2>
@@ -1321,14 +1473,25 @@ function App() {
             </div>
           </section>
 
-          <SectionSeparator />
+          {/* ===============================================
+              FULL-WIDTH PHOTO DIVIDER #2
+              Placement: after Wedding Timeline
+              No floral border by design.
+          =============================================== */}
+
+          <PhotoDivider
+            image={scrollDividerImages[1]}
+            eyebrow="OUR MEMORIES"
+            title="Little moments, forever remembered."
+            position="center center"
+          />
 
           {/* ===============================================
               PART 07: ENTOURAGE FROM EXCEL
               Source: /public/data/entourage.xlsx
           =============================================== */}
 
-          <section id="entourage" className="entourage-section">
+          <section id="entourage" className="entourage-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>THE PEOPLE WE LOVE</p>
               <h2 className="script-heading">Entourage</h2>
@@ -1401,13 +1564,24 @@ function App() {
             ) : null}
           </section>
 
-          <SectionSeparator />
+          {/* ===============================================
+              FULL-WIDTH PHOTO DIVIDER #3
+              Placement: after Entourage
+              No floral border by design.
+          =============================================== */}
+
+          <PhotoDivider
+            image={scrollDividerImages[2]}
+            eyebrow="OUR FOREVER"
+            title="A beautiful new chapter begins."
+            position="center center"
+          />
 
           {/* ===============================================
               PART 08: DRESS CODE
           =============================================== */}
 
-          <section id="dresscode" className="dresscode-section">
+          <section id="dresscode" className="dresscode-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>WHAT TO WEAR</p>
               <h2 className="script-heading">Dress Code</h2>
@@ -1461,13 +1635,11 @@ function App() {
             </div>
           </section>
 
-          <SectionSeparator />
-
           {/* ===============================================
               PART 09: OUR MOMENTS / YOUTUBE
           =============================================== */}
 
-          <section id="moments" className="moments-section">
+          <section id="moments" className="moments-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>OUR MEMORIES</p>
               <h2 className="script-heading">Our Moments</h2>
@@ -1522,14 +1694,12 @@ function App() {
             </div>
           </section>
 
-          <SectionSeparator />
-
           {/* ===============================================
               PART 10: GIFT GUIDE
               Source text/QR paths: wedding-config.json
           =============================================== */}
 
-          <section id="gift" className="gift-section">
+          <section id="gift" className="gift-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>WITH LOVE</p>
               <h2 className="script-heading">Gift Guide</h2>
@@ -1601,13 +1771,11 @@ function App() {
             </p>
           </section>
 
-          <SectionSeparator />
-
           {/* ===============================================
               PART 11: FRIENDLY REMINDERS
           =============================================== */}
 
-          <section id="reminders" className="reminders-section">
+          <section id="reminders" className="reminders-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>A FEW NOTES</p>
               <h2 className="script-heading">Friendly Reminders</h2>
@@ -1665,13 +1833,11 @@ function App() {
             </p>
           </section>
 
-          <SectionSeparator />
-
           {/* ===============================================
               PART 12: SCAN & SHARE
           =============================================== */}
 
-          <section id="share" className="share-section">
+          <section id="share" className="share-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>SHARE THE MOMENTS</p>
               <h2 className="script-heading">Scan & Share</h2>
@@ -1715,13 +1881,11 @@ function App() {
             </div>
           </section>
 
-          <SectionSeparator />
-
           {/* ===============================================
               PART 13: RSVP + SUCCESS ANIMATION
           =============================================== */}
 
-          <section id="rsvp" className="rsvp-section">
+          <section id="rsvp" className="rsvp-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>WILL YOU JOIN US?</p>
               <h2 className="script-heading">RSVP</h2>
