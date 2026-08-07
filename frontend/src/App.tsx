@@ -133,6 +133,35 @@ function App() {
     "/images/gallery-5.jpg",
   ];
 
+  /*
+     CINEMATIC OPENING HERO
+
+     These are the full-screen images shown immediately after
+     the guest opens the invitation. The presentation is based
+     on the supplied reference video: full-screen changing photos,
+     centered wedding text, date details, and a floating navigation.
+
+     You may replace these image paths later without changing
+     the slideshow logic.
+  */
+  /*
+     NEW CINEMATIC HERO PHOTOS
+
+     Store these files in:
+     frontend/public/images/
+
+     This slideshow is independent from the original
+     welcome gallery, which continues using gallery-1.jpg
+     through gallery-5.jpg.
+  */
+  const heroSlides = [
+    "/images/hero-1.jpg",
+    "/images/hero-2.jpg",
+    "/images/hero-3.jpg",
+    "/images/hero-4.jpg",
+    "/images/hero-5.jpg",
+  ];
+
   /* -------------------------------------------------------
      EXTERNAL PUBLIC DATA
      - /public/data/entourage.xlsx
@@ -166,6 +195,12 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
+
+  /* -------------------------------------------------------
+     CINEMATIC HERO STATE
+  ------------------------------------------------------- */
+
+  const [heroSlideIndex, setHeroSlideIndex] = useState(0);
 
   /* -------------------------------------------------------
      COUNTDOWN STATE
@@ -397,6 +432,27 @@ function App() {
       window.clearInterval(timer);
     };
   }, []);
+
+  /* =======================================================
+     CINEMATIC HERO SLIDESHOW
+
+     Starts only after the invitation has been opened.
+     A new photo fades in every 4.8 seconds.
+  ======================================================= */
+
+  useEffect(() => {
+    if (!invitationOpened || heroSlides.length <= 1) {
+      return;
+    }
+
+    const slideTimer = window.setInterval(() => {
+      setHeroSlideIndex((current) => (current + 1) % heroSlides.length);
+    }, 4800);
+
+    return () => {
+      window.clearInterval(slideTimer);
+    };
+  }, [invitationOpened, heroSlides.length]);
 
   /* =======================================================
      SCROLL REVEAL OBSERVER
@@ -902,29 +958,123 @@ function App() {
           =============================================== */}
 
           <section id="welcome" className="welcome-section">
-            <a
-              className="scroll-cue"
-              href="#story"
-              aria-label="Explore our story"
-            >
-              <span>Explore Our Story</span>
-              <div className="scroll-cue__mouse">
-                <div className="scroll-cue__wheel" />
+            {/* =============================================
+                CINEMATIC OPENING HERO
+
+                Inspired by the supplied reference video:
+                - full viewport portrait/photo slideshow
+                - dark cinematic overlay
+                - centered "We Do" treatment
+                - couple names + wedding date
+                - slideshow progress indicators
+            ============================================= */}
+
+            <div className="welcome-hero">
+              <div className="welcome-hero__slides" aria-hidden="true">
+                {heroSlides.map((image, index) => (
+                  <div
+                    className={`welcome-hero__slide${
+                      index === heroSlideIndex ? " is-active" : ""
+                    }`}
+                    key={image}
+                    style={{
+                      backgroundImage: `url("${image}")`,
+                    }}
+                  />
+                ))}
               </div>
-              <div className="scroll-cue__arrow">↓</div>
-            </a>
 
-            <div className="welcome-section__content">
-              <p className="welcome-section__eyebrow">John Paul & Joyce</p>
-              <h2 className="welcome-section__title">We are getting married</h2>
-              <p className="welcome-section__subtitle">
-                And we would love to celebrate this special day with you.
-              </p>
+              <div className="welcome-hero__overlay" aria-hidden="true" />
+              <div className="welcome-hero__vignette" aria-hidden="true" />
 
-              <div className="section-divider">
-                <span />
-                <strong>♡</strong>
-                <span />
+              <div className="welcome-hero__content">
+                <p className="welcome-hero__pretitle">
+                  TOGETHER WITH OUR FAMILIES
+                </p>
+
+                <h1 className="welcome-hero__we-do">
+                  <span>We</span>
+                  <strong aria-hidden="true">♡</strong>
+                  <span>Do</span>
+                </h1>
+
+                <p className="welcome-hero__names">
+                  John Paul <span>&</span> Joyce
+                </p>
+
+                <div className="welcome-hero__date">
+                  <span className="welcome-hero__date-side">SATURDAY</span>
+
+                  <div className="welcome-hero__date-center">
+                    <span>MARCH</span>
+                    <strong>20</strong>
+                    <span>2027</span>
+                  </div>
+
+                  <span className="welcome-hero__date-side">4:00 PM</span>
+                </div>
+
+                <p className="welcome-hero__location">Antipolo, Rizal</p>
+              </div>
+
+              <div
+                className="welcome-hero__indicators"
+                aria-label="Wedding photo slideshow"
+              >
+                {heroSlides.map((image, index) => (
+                  <button
+                    className={
+                      index === heroSlideIndex
+                        ? "welcome-hero__indicator is-active"
+                        : "welcome-hero__indicator"
+                    }
+                    type="button"
+                    key={`hero-indicator-${image}`}
+                    onClick={() => setHeroSlideIndex(index)}
+                    aria-label={`Show wedding photo ${index + 1}`}
+                    aria-current={index === heroSlideIndex ? "true" : undefined}
+                  >
+                    <span />
+                  </button>
+                ))}
+              </div>
+
+              <a
+                className="scroll-cue scroll-cue--hero"
+                href="#welcome-intro"
+                aria-label="Explore our story"
+              >
+                <span>Explore Our Story</span>
+
+                <div className="scroll-cue__mouse">
+                  <div className="scroll-cue__wheel" />
+                </div>
+
+                <div className="scroll-cue__arrow">↓</div>
+              </a>
+            </div>
+
+            {/* =============================================
+                WELCOME INTRO + CLICKABLE PHOTO GALLERY
+            ============================================= */}
+
+            <div id="welcome-intro" className="welcome-section__content">
+              <div className="welcome-section__intro reveal-on-scroll reveal-heading">
+                <p className="welcome-section__eyebrow">John Paul & Joyce</p>
+
+                <h2 className="welcome-section__title">
+                  We are getting married
+                </h2>
+
+                <p className="welcome-section__subtitle">
+                  And we would love to celebrate this special day with you.
+                </p>
+
+                <div className="section-divider">
+                  <span />
+                  <strong>♡</strong>
+                  <span />
+                </div>
               </div>
 
               <div className="welcome-section__gallery">
@@ -947,6 +1097,7 @@ function App() {
                         src={image}
                         alt={`John Paul and Joyce wedding moment ${index + 1}`}
                       />
+
                       <span className="welcome-section__photo-overlay">
                         <span>View Photo</span>
                       </span>
