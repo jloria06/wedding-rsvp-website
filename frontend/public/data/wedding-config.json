@@ -1,0 +1,30 @@
+{
+  "rsvpDeadline": "",
+  "rsvpDeadlineDisplay": "RSVP deadline to be announced",
+  "gift": {
+    "gcash": {
+      "title": "GCash",
+      "owner": "John Paul",
+      "account": "",
+      "qr": "",
+      "details": [],
+      "enabled": true
+    },
+    "maya": {
+      "title": "Maya",
+      "owner": "Joyce",
+      "account": "",
+      "qr": "",
+      "details": [],
+      "enabled": true
+    },
+    "bank": {
+      "title": "Bank Transfer",
+      "owner": "John Paul & Joyce",
+      "account": "",
+      "qr": "",
+      "details": [],
+      "enabled": true
+    }
+  }
+}
