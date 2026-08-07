@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     database_name: str = Field(alias="DATABASE_NAME")
     database_user: str = Field(alias="DATABASE_USER")
     database_password: str = Field(alias="DATABASE_PASSWORD")
+    database_ssl_ca: str | None = Field(
+        default=None,
+        alias="DATABASE_SSL_CA",
+    )
 
     jwt_secret_key: str = Field(alias="JWT_SECRET_KEY")
     refresh_secret_key: str = Field(alias="REFRESH_SECRET_KEY")
