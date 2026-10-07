@@ -12,7 +12,7 @@ from app.schemas import (
     AdminGuestUpdateRequest,
     AdminGuestUpdateResponse,
 )
-from app.security import CurrentAdministrator
+from app.security import DashboardAdministrator, GuestManager
 from app.services import AdminGuestManagementService
 
 router = APIRouter(
@@ -33,7 +33,7 @@ DatabaseSession = Annotated[
     summary="List wedding guests",
 )
 def list_guests(
-    current_administrator: CurrentAdministrator,
+    current_administrator: DashboardAdministrator,
     database_session: DatabaseSession,
 ) -> AdminGuestListResponse:
     service = AdminGuestManagementService(database_session)
@@ -49,7 +49,7 @@ def list_guests(
 )
 def create_guest(
     request: AdminGuestCreateRequest,
-    current_administrator: CurrentAdministrator,
+    current_administrator: GuestManager,
     database_session: DatabaseSession,
 ) -> AdminGuestCreateResponse:
     service = AdminGuestManagementService(database_session)
@@ -70,7 +70,7 @@ def create_guest(
 def update_guest(
     guest_id: int,
     request: AdminGuestUpdateRequest,
-    current_administrator: CurrentAdministrator,
+    current_administrator: GuestManager,
     database_session: DatabaseSession,
 ) -> AdminGuestUpdateResponse:
     service = AdminGuestManagementService(database_session)
@@ -93,7 +93,7 @@ def update_guest(
 )
 def delete_guest(
     guest_id: int,
-    current_administrator: CurrentAdministrator,
+    current_administrator: GuestManager,
     database_session: DatabaseSession,
 ) -> AdminGuestDeleteResponse:
     service = AdminGuestManagementService(database_session)

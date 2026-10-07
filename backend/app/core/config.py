@@ -55,6 +55,16 @@ class Settings(BaseSettings):
         default="5/minute",
         alias="ADMIN_LOGIN_RATE_LIMIT",
     )
+    admin_max_failed_login_attempts: int = Field(
+        default=5,
+        alias="ADMIN_MAX_FAILED_LOGIN_ATTEMPTS",
+        ge=1,
+    )
+    admin_lockout_minutes: int = Field(
+        default=15,
+        alias="ADMIN_LOCKOUT_MINUTES",
+        ge=1,
+    )
 
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     log_directory: Path = Field(alias="LOG_DIRECTORY")

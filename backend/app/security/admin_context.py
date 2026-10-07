@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import AuthorizationError
 from app.database.session import get_database_session
-from app.models import Administrator
+from app.models import Administrator, AdminRole
 from app.repositories import AdministratorRepository
-from app.security.tokens import decode_access_token
+from app.security.tokens import decode_access_token, password_change_marker
 
 DatabaseSession = Annotated[
     Session,
@@ -68,10 +68,51 @@ def get_current_administrator(
             "Administrator account is disabled.",
         )
 
+    if payload.get("password_changed_at") != password_change_marker(
+        administrator.password_changed_at,
+    ):
+        raise AuthorizationError(
+            "Administrator authentication is invalid or expired.",
+        )
+
     return administrator
 
 
 CurrentAdministrator = Annotated[
     Administrator,
     Depends(get_current_administrator),
+]
+
+
+def require_dashboard_administrator(
+    administrator: CurrentAdministrator,
+) -> Administrator:
+    if administrator.is_password_change_required:
+        raise AuthorizationError(
+            "Change your temporary password before accessing the dashboard.",
+        )
+
+    return administrator
+
+
+DashboardAdministrator = Annotated[
+    Administrator,
+    Depends(require_dashboard_administrator),
+]
+
+
+def require_guest_manager(
+    administrator: DashboardAdministrator,
+) -> Administrator:
+    if administrator.role == AdminRole.VIEWER:
+        raise AuthorizationError(
+            "Viewer accounts cannot modify guests.",
+        )
+
+    return administrator
+
+
+GuestManager = Annotated[
+    Administrator,
+    Depends(require_guest_manager),
 ]

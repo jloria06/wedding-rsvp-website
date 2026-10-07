@@ -8,6 +8,10 @@ type ApiErrorPayload = {
   message?: string;
   detail?: string;
   error_code?: string;
+  error?: {
+    code?: string;
+    message?: string;
+  };
 };
 
 export class ApiError extends Error {
@@ -41,11 +45,12 @@ export async function apiRequest<TResponse>(
     const errorPayload = payload as ApiErrorPayload;
 
     throw new ApiError(
-      errorPayload.message ??
+      errorPayload.error?.message ??
+        errorPayload.message ??
         errorPayload.detail ??
         "The request could not be completed.",
       response.status,
-      errorPayload.error_code,
+      errorPayload.error?.code ?? errorPayload.error_code,
     );
   }
 

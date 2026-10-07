@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import AuthenticationError
 from app.database.session import get_database_session
 from app.schemas import (
     AdministratorLoginRequest,
@@ -37,7 +38,11 @@ def login_administrator(
 ) -> AdministratorLoginResponse:
     service = AdministratorAuthenticationService(database_session)
 
-    response = service.authenticate(request)
+    try:
+        response = service.authenticate(request)
+    except AuthenticationError:
+        database_session.commit()
+        raise
 
     database_session.commit()
 

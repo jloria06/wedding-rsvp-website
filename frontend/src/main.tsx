@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
 import App from "./App";
+import { AdminApp } from "./admin/AdminApp";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -18,7 +19,7 @@ createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        {window.location.pathname.startsWith("/admin") ? <AdminApp /> : <App />}
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,
