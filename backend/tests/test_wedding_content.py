@@ -15,6 +15,9 @@ def test_wedding_content_uses_defaults_and_persists_updates() -> None:
         initial = service.get_content()
         assert initial.content.ceremony.name.startswith("Diocesan Shrine")
         assert initial.content.features.rsvp is True
+        assert initial.content.cover_image == "/images/cover.jpg"
+        assert len(initial.content.hero_images) == 5
+        assert initial.content.story_items[0].image == "/images/story-1.jpg"
 
         updated_content = DEFAULT_WEDDING_CONTENT.model_copy(deep=True)
         updated_content.rsvp_deadline = "2027-02-20"

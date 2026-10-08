@@ -19,7 +19,23 @@ class WeddingContentService:
         if record is None:
             content = DEFAULT_WEDDING_CONTENT
         else:
-            content = WeddingContentPayload.model_validate(record.content)
+            defaults = DEFAULT_WEDDING_CONTENT.model_dump(mode="json", by_alias=True)
+            stored = record.content
+            merged = {**defaults, **stored}
+            for venue in ("ceremony", "reception"):
+                merged[venue] = {**defaults[venue], **stored.get(venue, {})}
+            merged["storyItems"] = [
+                {
+                    **(
+                        defaults["storyItems"][index]
+                        if index < len(defaults["storyItems"])
+                        else {}
+                    ),
+                    **item,
+                }
+                for index, item in enumerate(stored.get("storyItems", []))
+            ]
+            content = WeddingContentPayload.model_validate(merged)
         return WeddingContentResponse(content=content)
 
     def update_content(

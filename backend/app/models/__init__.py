@@ -10,6 +10,7 @@ from app.models.enums import (
     RSVPStatus,
 )
 from app.models.guest import Guest
+from app.models.media_asset import MediaAsset
 from app.models.mixins import SoftDeleteMixin, TimestampMixin
 from app.models.rsvp import RSVP
 from app.models.wedding_content import WeddingContent
@@ -23,6 +24,7 @@ __all__ = [
     "Companion",
     "Guest",
     "GuestStatus",
+    "MediaAsset",
     "MealPreference",
     "RSVP",
     "RSVPStatus",

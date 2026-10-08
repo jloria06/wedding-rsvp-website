@@ -10,12 +10,14 @@ class VenueContent(ContentModel):
     time: str = Field(min_length=1, max_length=50)
     address: str = Field(min_length=1, max_length=300)
     map_url: str = Field(alias="mapUrl", max_length=500)
+    image: str = Field(default="", max_length=500)
 
 
 class StoryItemContent(ContentModel):
     eyebrow: str = Field(max_length=100)
     title: str = Field(min_length=1, max_length=150)
     body: str = Field(min_length=1, max_length=1000)
+    image: str = Field(default="", max_length=500)
 
 
 class EntouragePersonContent(ContentModel):
@@ -52,6 +54,26 @@ class FeatureSwitches(ContentModel):
 
 
 class WeddingContentPayload(ContentModel):
+    cover_image: str = Field(
+        alias="coverImage", default="/images/cover.jpg", max_length=500
+    )
+    portrait_image: str = Field(
+        alias="portraitImage", default="/images/portrait.jpg", max_length=500
+    )
+    hero_images: list[str] = Field(
+        alias="heroImages",
+        default_factory=lambda: [f"/images/hero-{index}.jpg" for index in range(1, 6)],
+        min_length=1,
+        max_length=10,
+    )
+    divider_images: list[str] = Field(
+        alias="dividerImages",
+        default_factory=lambda: [
+            f"/images/scroll-divider-{index}.jpg" for index in range(1, 4)
+        ],
+        min_length=3,
+        max_length=3,
+    )
     wedding_date_iso: str = Field(alias="weddingDateIso", min_length=10, max_length=50)
     wedding_date_display: str = Field(
         alias="weddingDateDisplay", min_length=1, max_length=150
@@ -80,6 +102,20 @@ class WeddingContentResponse(BaseModel):
 
 DEFAULT_WEDDING_CONTENT = WeddingContentPayload.model_validate(
     {
+        "coverImage": "/images/cover.jpg",
+        "portraitImage": "/images/portrait.jpg",
+        "heroImages": [
+            "/images/hero-1.jpg",
+            "/images/hero-2.jpg",
+            "/images/hero-3.jpg",
+            "/images/hero-4.jpg",
+            "/images/hero-5.jpg",
+        ],
+        "dividerImages": [
+            "/images/scroll-divider-1.jpg",
+            "/images/scroll-divider-2.jpg",
+            "/images/scroll-divider-3.jpg",
+        ],
         "weddingDateIso": "2027-03-20T16:00:00+08:00",
         "weddingDateDisplay": "Saturday · March 20, 2027",
         "rsvpDeadline": "",
@@ -89,12 +125,14 @@ DEFAULT_WEDDING_CONTENT = WeddingContentPayload.model_validate(
             "time": "4:00 PM",
             "address": "106 Sumulong Hwy, Antipolo, 1870 Rizal",
             "mapUrl": "https://maps.app.goo.gl/ywzhGAg79RuC541s8",
+            "image": "/images/ceremony.jpg",
         },
         "reception": {
             "name": "LeBlanc Hotel and Resort",
             "time": "6:00 PM",
             "address": "3 Taktak Rd, Antipolo, 1870 Rizal",
             "mapUrl": "https://maps.app.goo.gl/s6W7RyrZj3EhZxxbA",
+            "image": "/images/reception.jpg",
         },
         "storyHeading": (
             "From the moments we shared, to the journey that brought us here."
@@ -108,6 +146,7 @@ DEFAULT_WEDDING_CONTENT = WeddingContentPayload.model_validate(
                     "moments, conversations, laughter, and a connection that slowly "
                     "became something more."
                 ),
+                "image": "/images/story-1.jpg",
             },
             {
                 "eyebrow": "OUR JOURNEY",
@@ -117,6 +156,7 @@ DEFAULT_WEDDING_CONTENT = WeddingContentPayload.model_validate(
                     "we learned that the best part of the journey was having each "
                     "other beside us."
                 ),
+                "image": "/images/story-2.jpg",
             },
             {
                 "eyebrow": "THE NEXT CHAPTER",
@@ -126,6 +166,7 @@ DEFAULT_WEDDING_CONTENT = WeddingContentPayload.model_validate(
                     "chapter together and celebrate it with the people who have been "
                     "part of our story."
                 ),
+                "image": "/images/story-3.jpg",
             },
         ],
         "entourageGroups": [],

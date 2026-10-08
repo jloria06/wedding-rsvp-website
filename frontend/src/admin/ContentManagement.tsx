@@ -1,8 +1,8 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 
-import { ApiError } from "../lib/api";
+import { ApiError, apiAssetUrl } from "../lib/api";
 import { defaultWeddingContent, type WeddingContent } from "../types/content";
-import { getAdministratorContent, updateAdministratorContent } from "./api";
+import { getAdministratorContent, updateAdministratorContent, uploadAdministratorMedia } from "./api";
 import type { AdminRole } from "./types";
 
 const giftKeys = ["gcash", "maya", "bank"] as const;
@@ -50,13 +50,23 @@ export function ContentManagement({ accessToken, role }: { accessToken: string; 
           <div className="admin-form-grid"><label>Wedding date and time<input type="datetime-local" value={content.weddingDateIso.slice(0, 16)} onChange={(event) => setContent({...content, weddingDateIso:`${event.target.value}:00+08:00`})} disabled={!canManage} required /></label><label>Displayed wedding date<input value={content.weddingDateDisplay} onChange={(event) => setContent({...content, weddingDateDisplay:event.target.value})} disabled={!canManage} required /></label><label>RSVP deadline<input type="date" value={content.rsvpDeadline} onChange={(event) => setContent({...content, rsvpDeadline:event.target.value})} disabled={!canManage} /></label><label>Displayed RSVP deadline<input value={content.rsvpDeadlineDisplay} onChange={(event) => setContent({...content, rsvpDeadlineDisplay:event.target.value})} disabled={!canManage} required /></label></div>
         </ContentSection>
 
+        <ContentSection title="Website images">
+          <p className="admin-content-help">JPEG, PNG, or WebP, up to 5 MB. Uploading replaces the selected image after you save the website content.</p>
+          <div className="admin-media-grid">
+            <ImageField label="Invitation background" value={content.coverImage} accessToken={accessToken} disabled={!canManage} onChange={(coverImage) => setContent({...content, coverImage})} />
+            <ImageField label="Invitation portrait" value={content.portraitImage} accessToken={accessToken} disabled={!canManage} onChange={(portraitImage) => setContent({...content, portraitImage})} />
+          </div>
+          <fieldset><legend>Opening hero slideshow</legend><div className="admin-media-grid">{content.heroImages.map((image, index) => <ImageField key={index} label={`Hero image ${index + 1}`} value={image} accessToken={accessToken} disabled={!canManage} onChange={(value) => setContent({...content, heroImages:content.heroImages.map((entry, entryIndex) => entryIndex === index ? value : entry)})} />)}</div></fieldset>
+          <fieldset><legend>Full-width divider backgrounds</legend><div className="admin-media-grid">{content.dividerImages.map((image, index) => <ImageField key={index} label={`Divider image ${index + 1}`} value={image} accessToken={accessToken} disabled={!canManage} onChange={(value) => setContent({...content, dividerImages:content.dividerImages.map((entry, entryIndex) => entryIndex === index ? value : entry)})} />)}</div></fieldset>
+        </ContentSection>
+
         <ContentSection title="Venues">
-          {(["ceremony", "reception"] as const).map((key) => <fieldset key={key}><legend>{key}</legend><div className="admin-form-grid"><label>Name<input value={content[key].name} onChange={(event) => setContent({...content, [key]:{...content[key], name:event.target.value}})} disabled={!canManage} required /></label><label>Time<input value={content[key].time} onChange={(event) => setContent({...content, [key]:{...content[key], time:event.target.value}})} disabled={!canManage} required /></label><label>Address<input value={content[key].address} onChange={(event) => setContent({...content, [key]:{...content[key], address:event.target.value}})} disabled={!canManage} required /></label><label>Google Maps URL<input type="url" value={content[key].mapUrl} onChange={(event) => setContent({...content, [key]:{...content[key], mapUrl:event.target.value}})} disabled={!canManage} required /></label></div></fieldset>)}
+          {(["ceremony", "reception"] as const).map((key) => <fieldset key={key}><legend>{key}</legend><ImageField label={`${key} background`} value={content[key].image} accessToken={accessToken} disabled={!canManage} onChange={(image) => setContent({...content, [key]:{...content[key], image}})} /><div className="admin-form-grid"><label>Name<input value={content[key].name} onChange={(event) => setContent({...content, [key]:{...content[key], name:event.target.value}})} disabled={!canManage} required /></label><label>Time<input value={content[key].time} onChange={(event) => setContent({...content, [key]:{...content[key], time:event.target.value}})} disabled={!canManage} required /></label><label>Address<input value={content[key].address} onChange={(event) => setContent({...content, [key]:{...content[key], address:event.target.value}})} disabled={!canManage} required /></label><label>Google Maps URL<input type="url" value={content[key].mapUrl} onChange={(event) => setContent({...content, [key]:{...content[key], mapUrl:event.target.value}})} disabled={!canManage} required /></label></div></fieldset>)}
         </ContentSection>
 
         <ContentSection title="Our Story">
           <label>Section heading<textarea rows={2} value={content.storyHeading} onChange={(event) => setContent({...content, storyHeading:event.target.value})} disabled={!canManage} /></label>
-          {content.storyItems.map((item, index) => <fieldset key={index}><legend>Story {index + 1}</legend><div className="admin-form-grid"><label>Eyebrow<input value={item.eyebrow} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, eyebrow:event.target.value} : entry)})} disabled={!canManage} /></label><label>Title<input value={item.title} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, title:event.target.value} : entry)})} disabled={!canManage} required /></label></div><label>Story text<textarea rows={3} value={item.body} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, body:event.target.value} : entry)})} disabled={!canManage} required /></label></fieldset>)}
+          {content.storyItems.map((item, index) => <fieldset key={index}><legend>Story {index + 1}</legend><ImageField label={`Story image ${index + 1}`} value={item.image} accessToken={accessToken} disabled={!canManage} onChange={(image) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, image} : entry)})} /><div className="admin-form-grid"><label>Eyebrow<input value={item.eyebrow} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, eyebrow:event.target.value} : entry)})} disabled={!canManage} /></label><label>Title<input value={item.title} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, title:event.target.value} : entry)})} disabled={!canManage} required /></label></div><label>Story text<textarea rows={3} value={item.body} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, body:event.target.value} : entry)})} disabled={!canManage} required /></label></fieldset>)}
         </ContentSection>
 
         <ContentSection title="Entourage">
@@ -66,7 +76,7 @@ export function ContentManagement({ accessToken, role }: { accessToken: string; 
         </ContentSection>
 
         <ContentSection title="Gift details">
-          {giftKeys.map((key) => { const method = content.gift[key]; return <fieldset key={key}><legend>{method.title}</legend><label className="admin-checkbox"><input type="checkbox" checked={method.enabled} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, enabled:event.target.checked}}})} disabled={!canManage} />Show this gift method</label><div className="admin-form-grid"><label>Title<input value={method.title} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, title:event.target.value}}})} disabled={!canManage} required /></label><label>Account owner<input value={method.owner} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, owner:event.target.value}}})} disabled={!canManage} /></label><label>Account number/details<input value={method.account} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, account:event.target.value}}})} disabled={!canManage} /></label><label>QR image path<input value={method.qr} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, qr:event.target.value}}})} disabled={!canManage} /></label></div><label>Additional details<textarea rows={3} value={method.details.join("\n")} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, details:event.target.value.split("\n").filter(Boolean)}}})} disabled={!canManage} /></label></fieldset>; })}
+          {giftKeys.map((key) => { const method = content.gift[key]; return <fieldset key={key}><legend>{method.title}</legend><label className="admin-checkbox"><input type="checkbox" checked={method.enabled} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, enabled:event.target.checked}}})} disabled={!canManage} />Show this gift method</label><ImageField label={`${method.title} QR code`} value={method.qr} accessToken={accessToken} disabled={!canManage} onChange={(qr) => setContent({...content, gift:{...content.gift, [key]:{...method, qr}}})} /><div className="admin-form-grid"><label>Title<input value={method.title} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, title:event.target.value}}})} disabled={!canManage} required /></label><label>Account owner<input value={method.owner} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, owner:event.target.value}}})} disabled={!canManage} /></label><label>Account number/details<input value={method.account} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, account:event.target.value}}})} disabled={!canManage} /></label></div><label>Additional details<textarea rows={3} value={method.details.join("\n")} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, details:event.target.value.split("\n").filter(Boolean)}}})} disabled={!canManage} /></label></fieldset>; })}
         </ContentSection>
 
         <ContentSection title="Feature switches">
@@ -81,4 +91,27 @@ export function ContentManagement({ accessToken, role }: { accessToken: string; 
 
 function ContentSection({ title, children }: { title: string; children: ReactNode }) {
   return <section className="admin-content-card"><h3>{title}</h3>{children}</section>;
+}
+
+function ImageField({ label, value, accessToken, disabled, onChange }: { label: string; value: string; accessToken: string; disabled: boolean; onChange: (value: string) => void }) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  async function upload(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setErrorMessage("");
+    setIsUploading(true);
+    try {
+      const response = await uploadAdministratorMedia(accessToken, file);
+      onChange(response.url);
+    } catch (error) {
+      setErrorMessage(error instanceof ApiError ? error.message : "The image could not be uploaded.");
+    } finally {
+      setIsUploading(false);
+      event.target.value = "";
+    }
+  }
+
+  return <div className="admin-media-field"><span>{label}</span>{value ? <img src={apiAssetUrl(value)} alt={`${label} preview`} /> : <div className="admin-media-empty">No image uploaded</div>}<label className="admin-media-button">{isUploading ? "Uploading..." : "Choose image"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={upload} disabled={disabled || isUploading} /></label>{errorMessage ? <small className="admin-media-error" role="alert">{errorMessage}</small> : null}</div>;
 }

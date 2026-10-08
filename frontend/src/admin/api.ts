@@ -1,4 +1,4 @@
-import { apiDownload, apiRequest } from "../lib/api";
+import { apiDownload, apiRequest, apiUpload } from "../lib/api";
 import type {
   AdminLoginResponse,
   AdminProfile,
@@ -147,4 +147,20 @@ export function updateAdministratorContent(
     headers: { Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(content),
   });
+}
+
+export type MediaUploadResponse = {
+  success: boolean;
+  id: number;
+  url: string;
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+};
+
+export function uploadAdministratorMedia(
+  accessToken: string,
+  file: File,
+): Promise<MediaUploadResponse> {
+  return apiUpload<MediaUploadResponse>("/admin/content/media", file, accessToken);
 }

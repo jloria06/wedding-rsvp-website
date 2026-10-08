@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 
 import { InvitationVerificationForm } from "./components/InvitationVerificationForm";
 import { RSVPForm } from "./components/RSVPForm";
-import { apiRequest } from "./lib/api";
+import { apiAssetUrl, apiRequest } from "./lib/api";
 import {
   defaultWeddingContent,
   type WeddingContent,
@@ -171,13 +171,6 @@ function App() {
      welcome gallery, which continues using gallery-1.jpg
      through gallery-5.jpg.
   */
-  const heroSlides = [
-    "/images/hero-1.jpg",
-    "/images/hero-2.jpg",
-    "/images/hero-3.jpg",
-    "/images/hero-4.jpg",
-    "/images/hero-5.jpg",
-  ];
 
   /*
      FULL-WIDTH PHOTO DIVIDER ASSETS
@@ -193,11 +186,6 @@ function App() {
      These images are independent from the opening hero,
      gallery, and story photos.
   */
-  const scrollDividerImages = [
-    "/images/scroll-divider-1.jpg",
-    "/images/scroll-divider-2.jpg",
-    "/images/scroll-divider-3.jpg",
-  ];
 
   /* -------------------------------------------------------
      EXTERNAL PUBLIC DATA
@@ -212,6 +200,8 @@ function App() {
   const [weddingConfig, setWeddingConfig] = useState<ResolvedWeddingConfig>(
     DEFAULT_WEDDING_CONFIG,
   );
+  const heroSlides = weddingConfig.heroImages.map(apiAssetUrl);
+  const scrollDividerImages = weddingConfig.dividerImages.map(apiAssetUrl);
   const weddingDate = useMemo(
     () => new Date(weddingConfig.weddingDateIso),
     [weddingConfig.weddingDateIso],
@@ -326,6 +316,10 @@ function App() {
         setWeddingConfig({
           ...DEFAULT_WEDDING_CONFIG,
           ...incoming,
+          coverImage: incoming.coverImage || DEFAULT_WEDDING_CONFIG.coverImage,
+          portraitImage: incoming.portraitImage || DEFAULT_WEDDING_CONFIG.portraitImage,
+          heroImages: incoming.heroImages?.length ? incoming.heroImages : DEFAULT_WEDDING_CONFIG.heroImages,
+          dividerImages: incoming.dividerImages?.length === 3 ? incoming.dividerImages : DEFAULT_WEDDING_CONFIG.dividerImages,
           rsvpDeadline:
             incoming.rsvpDeadline ?? DEFAULT_WEDDING_CONFIG.rsvpDeadline,
           rsvpDeadlineDisplay:
@@ -348,11 +342,17 @@ function App() {
           ceremony: {
             ...DEFAULT_WEDDING_CONFIG.ceremony,
             ...(incoming.ceremony ?? {}),
+            image: incoming.ceremony?.image || DEFAULT_WEDDING_CONFIG.ceremony.image,
           },
           reception: {
             ...DEFAULT_WEDDING_CONFIG.reception,
             ...(incoming.reception ?? {}),
+            image: incoming.reception?.image || DEFAULT_WEDDING_CONFIG.reception.image,
           },
+          storyItems: (incoming.storyItems ?? DEFAULT_WEDDING_CONFIG.storyItems).map((item, index) => ({
+            ...item,
+            image: item.image || DEFAULT_WEDDING_CONFIG.storyItems[index]?.image || DEFAULT_WEDDING_CONFIG.storyItems[0].image,
+          })),
           features: {
             ...DEFAULT_WEDDING_CONFIG.features,
             ...(incoming.features ?? {}),
@@ -852,14 +852,14 @@ function App() {
            PART 01: INVITATION COVER
         ================================================= */
         <main className="invitation-cover">
-          <div className="invitation-cover__background" />
+          <div className="invitation-cover__background" style={{ backgroundImage: `url("${apiAssetUrl(weddingConfig.coverImage)}")` }} />
           <div className="invitation-cover__overlay" />
 
           <section className="invitation-cover__content">
             <p className="invitation-cover__eyebrow">YOU ARE INVITED</p>
 
             <div className="invitation-cover__portrait">
-              <img src="/images/portrait.jpg" alt="John Paul and Joyce" />
+              <img src={apiAssetUrl(weddingConfig.portraitImage)} alt="John Paul and Joyce" />
 
               <div className="invitation-cover__monogram">
                 JP <span>&</span> Joyce
@@ -1249,7 +1249,7 @@ function App() {
             <div className="story-section__timeline">
               {weddingConfig.storyItems.map((item, index) => (
                 <article className={`story-card${index % 2 ? " story-card--reverse reveal-on-scroll reveal-right" : " reveal-on-scroll reveal-left"}`} key={`${item.title}-${index}`}>
-                  <div className="story-card__image"><img src={`/images/story-${Math.min(index + 1, 3)}.jpg`} alt={item.title} /></div>
+                  <div className="story-card__image"><img src={apiAssetUrl(item.image)} alt={item.title} /></div>
                   <div className="story-card__content"><span className="story-card__number">{String(index + 1).padStart(2, "0")}</span><p className="story-card__eyebrow">{item.eyebrow}</p><h3>{item.title}</h3><p>{item.body}</p></div>
                 </article>
               ))}
@@ -1305,7 +1305,7 @@ function App() {
             <div className="venue-grid">
               <article className="venue-card reveal-on-scroll reveal-up">
                 <img
-                  src="/images/ceremony.jpg"
+                  src={apiAssetUrl(weddingConfig.ceremony.image)}
                   alt={weddingConfig.ceremony.name}
                 />
                 <div className="venue-card__overlay" />
@@ -1327,7 +1327,7 @@ function App() {
 
               <article className="venue-card reveal-on-scroll reveal-up">
                 <img
-                  src="/images/reception.jpg"
+                  src={apiAssetUrl(weddingConfig.reception.image)}
                   alt={weddingConfig.reception.name}
                 />
                 <div className="venue-card__overlay" />
@@ -1672,7 +1672,7 @@ function App() {
                   {method.qr ? (
                     <img
                       className="gift-qr-card__image"
-                      src={method.qr}
+                      src={apiAssetUrl(method.qr)}
                       alt={`${method.title} payment QR code`}
                     />
                   ) : (
