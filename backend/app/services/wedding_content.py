@@ -24,8 +24,9 @@ class WeddingContentService:
             merged = {**defaults, **stored}
             for venue in ("ceremony", "reception"):
                 merged[venue] = {**defaults[venue], **stored.get(venue, {})}
-            merged["storyItems"] = [
-                {
+            merged_story_items = []
+            for index, item in enumerate(stored.get("storyItems", [])):
+                merged_item = {
                     **(
                         defaults["storyItems"][index]
                         if index < len(defaults["storyItems"])
@@ -33,8 +34,11 @@ class WeddingContentService:
                     ),
                     **item,
                 }
-                for index, item in enumerate(stored.get("storyItems", []))
-            ]
+                if "images" not in item:
+                    fallback_image = item.get("image") or merged_item.get("image", "")
+                    merged_item["images"] = [fallback_image] if fallback_image else []
+                merged_story_items.append(merged_item)
+            merged["storyItems"] = merged_story_items
             content = WeddingContentPayload.model_validate(merged)
         return WeddingContentResponse(content=content)
 

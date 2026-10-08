@@ -18,11 +18,16 @@ def test_wedding_content_uses_defaults_and_persists_updates() -> None:
         assert initial.content.cover_image == "/images/cover.jpg"
         assert len(initial.content.hero_images) == 5
         assert initial.content.story_items[0].image == "/images/story-1.jpg"
+        assert initial.content.story_items[0].images == ["/images/story-1.jpg"]
 
         updated_content = DEFAULT_WEDDING_CONTENT.model_copy(deep=True)
         updated_content.rsvp_deadline = "2027-02-20"
         updated_content.rsvp_deadline_display = "February 20, 2027"
         updated_content.features.gift = False
+        updated_content.story_items[0].images = [
+            "/api/wedding-content/media/1",
+            "/api/wedding-content/media/2",
+        ]
         updated_content.hero_images = [
             f"/api/wedding-content/media/{index}" for index in range(1, 26)
         ]
@@ -33,4 +38,5 @@ def test_wedding_content_uses_defaults_and_persists_updates() -> None:
         assert persisted.content.rsvp_deadline == "2027-02-20"
         assert persisted.content.rsvp_deadline_display == "February 20, 2027"
         assert persisted.content.features.gift is False
+        assert len(persisted.content.story_items[0].images) == 2
         assert len(persisted.content.hero_images) == 25

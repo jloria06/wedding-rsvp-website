@@ -13,6 +13,8 @@ export function ContentManagement({ accessToken, role }: { accessToken: string; 
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingHeroImages, setIsUploadingHeroImages] = useState(false);
   const [heroUploadError, setHeroUploadError] = useState("");
+  const [uploadingStoryIndex, setUploadingStoryIndex] = useState<number | null>(null);
+  const [storyUploadError, setStoryUploadError] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const canManage = role !== "viewer";
@@ -63,6 +65,32 @@ export function ContentManagement({ accessToken, role }: { accessToken: string; 
     }
   }
 
+  function updateStoryImages(storyIndex: number, images: string[]): void {
+    setContent((current) => ({...current, storyItems:current.storyItems.map((item, index) => index === storyIndex ? {...item, image:images[0] ?? item.image, images} : item)}));
+  }
+
+  async function addStoryImages(storyIndex: number, event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const files = Array.from(event.target.files ?? []);
+    if (!files.length) return;
+    setUploadingStoryIndex(storyIndex);
+    setStoryUploadError("");
+    const uploadedImages: string[] = [];
+    try {
+      for (const file of files) {
+        const response = await uploadAdministratorMedia(accessToken, file);
+        uploadedImages.push(response.url);
+      }
+    } catch (error) {
+      setStoryUploadError(error instanceof ApiError ? error.message : "One or more story images could not be uploaded.");
+    } finally {
+      if (uploadedImages.length) {
+        setContent((current) => ({...current, storyItems:current.storyItems.map((item, index) => index === storyIndex ? {...item, images:[...(item.images?.length ? item.images : [item.image]), ...uploadedImages]} : item)}));
+      }
+      setUploadingStoryIndex(null);
+      event.target.value = "";
+    }
+  }
+
   if (isLoading) return <p className="admin-table-message">Loading wedding content...</p>;
 
   return (
@@ -91,7 +119,8 @@ export function ContentManagement({ accessToken, role }: { accessToken: string; 
 
         <ContentSection title="Our Story">
           <label>Section heading<textarea rows={2} value={content.storyHeading} onChange={(event) => setContent({...content, storyHeading:event.target.value})} disabled={!canManage} /></label>
-          {content.storyItems.map((item, index) => <fieldset key={index}><legend>Story {index + 1}</legend><ImageField label={`Story image ${index + 1}`} value={item.image} accessToken={accessToken} disabled={!canManage} onChange={(image) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, image} : entry)})} /><div className="admin-form-grid"><label>Eyebrow<input value={item.eyebrow} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, eyebrow:event.target.value} : entry)})} disabled={!canManage} /></label><label>Title<input value={item.title} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, title:event.target.value} : entry)})} disabled={!canManage} required /></label></div><label>Story text<textarea rows={3} value={item.body} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, body:event.target.value} : entry)})} disabled={!canManage} required /></label></fieldset>)}
+          {content.storyItems.map((item, index) => { const storyImages = item.images?.length ? item.images : [item.image]; return <fieldset key={index}><legend>Story {index + 1}</legend><p className="admin-content-help">These photos rotate every five seconds on the public website.</p><div className="admin-media-grid">{storyImages.map((image, imageIndex) => <ImageField key={`${image}-${imageIndex}`} label={`Story ${index + 1} photo ${imageIndex + 1}`} value={image} accessToken={accessToken} disabled={!canManage} onChange={(value) => updateStoryImages(index, storyImages.map((entry, entryIndex) => entryIndex === imageIndex ? value : entry))} onRemove={storyImages.length > 1 ? () => updateStoryImages(index, storyImages.filter((_, entryIndex) => entryIndex !== imageIndex)) : undefined} />)}</div>{canManage ? <label className="admin-media-add">{uploadingStoryIndex === index ? "Uploading photos..." : "Add story photos"}<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => addStoryImages(index, event)} disabled={uploadingStoryIndex !== null} /></label> : null}<div className="admin-form-grid"><label>Eyebrow<input value={item.eyebrow} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, eyebrow:event.target.value} : entry)})} disabled={!canManage} /></label><label>Title<input value={item.title} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, title:event.target.value} : entry)})} disabled={!canManage} required /></label></div><label>Story text<textarea rows={3} value={item.body} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, body:event.target.value} : entry)})} disabled={!canManage} required /></label></fieldset>; })}
+          {storyUploadError ? <p className="admin-media-error" role="alert">{storyUploadError}</p> : null}
         </ContentSection>
 
         <ContentSection title="Entourage">
@@ -108,7 +137,7 @@ export function ContentManagement({ accessToken, role }: { accessToken: string; 
           <div className="admin-feature-switches">{Object.entries(content.features).map(([key, enabled]) => <label className="admin-checkbox" key={key}><input type="checkbox" checked={enabled} onChange={(event) => setContent({...content, features:{...content.features, [key]:event.target.checked}})} disabled={!canManage} />Show {key} section</label>)}</div>
         </ContentSection>
 
-        {canManage ? <div className="admin-content-save"><button type="submit" disabled={isSaving || isUploadingHeroImages}>{isSaving ? "Saving..." : "Save website content"}</button></div> : null}
+        {canManage ? <div className="admin-content-save"><button type="submit" disabled={isSaving || isUploadingHeroImages || uploadingStoryIndex !== null}>{isSaving ? "Saving..." : "Save website content"}</button></div> : null}
       </form>
     </section>
   );

@@ -18,6 +18,7 @@ class StoryItemContent(ContentModel):
     title: str = Field(min_length=1, max_length=150)
     body: str = Field(min_length=1, max_length=1000)
     image: str = Field(default="", max_length=500)
+    images: list[str] = Field(default_factory=list)
 
 
 class EntouragePersonContent(ContentModel):
@@ -146,6 +147,7 @@ DEFAULT_WEDDING_CONTENT = WeddingContentPayload.model_validate(
                     "became something more."
                 ),
                 "image": "/images/story-1.jpg",
+                "images": ["/images/story-1.jpg"],
             },
             {
                 "eyebrow": "OUR JOURNEY",
@@ -156,6 +158,7 @@ DEFAULT_WEDDING_CONTENT = WeddingContentPayload.model_validate(
                     "other beside us."
                 ),
                 "image": "/images/story-2.jpg",
+                "images": ["/images/story-2.jpg"],
             },
             {
                 "eyebrow": "THE NEXT CHAPTER",
@@ -166,6 +169,7 @@ DEFAULT_WEDDING_CONTENT = WeddingContentPayload.model_validate(
                     "part of our story."
                 ),
                 "image": "/images/story-3.jpg",
+                "images": ["/images/story-3.jpg"],
             },
         ],
         "entourageGroups": [],

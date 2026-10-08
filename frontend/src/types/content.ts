@@ -11,6 +11,7 @@ export type StoryItemContent = {
   title: string;
   body: string;
   image: string;
+  images: string[];
 };
 
 export type EntouragePersonContent = { role: string; name: string };
@@ -81,9 +82,9 @@ export const defaultWeddingContent: WeddingContent = {
   },
   storyHeading: "From the moments we shared, to the journey that brought us here.",
   storyItems: [
-    { eyebrow: "HOW IT STARTED", title: "Our Beginning", body: "Every beautiful story starts somewhere. Ours began with simple moments, conversations, laughter, and a connection that slowly became something more.", image: "/images/story-1.jpg" },
-    { eyebrow: "OUR JOURNEY", title: "Growing Together", body: "Through adventures, ordinary days, milestones, and challenges, we learned that the best part of the journey was having each other beside us.", image: "/images/story-2.jpg" },
-    { eyebrow: "THE NEXT CHAPTER", title: "Forever Starts Here", body: "And now, with grateful hearts, we are ready to begin our next chapter together and celebrate it with the people who have been part of our story.", image: "/images/story-3.jpg" },
+    { eyebrow: "HOW IT STARTED", title: "Our Beginning", body: "Every beautiful story starts somewhere. Ours began with simple moments, conversations, laughter, and a connection that slowly became something more.", image: "/images/story-1.jpg", images: ["/images/story-1.jpg"] },
+    { eyebrow: "OUR JOURNEY", title: "Growing Together", body: "Through adventures, ordinary days, milestones, and challenges, we learned that the best part of the journey was having each other beside us.", image: "/images/story-2.jpg", images: ["/images/story-2.jpg"] },
+    { eyebrow: "THE NEXT CHAPTER", title: "Forever Starts Here", body: "And now, with grateful hearts, we are ready to begin our next chapter together and celebrate it with the people who have been part of our story.", image: "/images/story-3.jpg", images: ["/images/story-3.jpg"] },
   ],
   entourageGroups: [],
   gift: {

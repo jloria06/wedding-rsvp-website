@@ -133,6 +133,21 @@ function PhotoDivider({
   );
 }
 
+function StoryImageSlideshow({ images, title }: { images: string[]; title: string }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveIndex(0);
+    if (images.length <= 1) return;
+    const timer = window.setInterval(() => {
+      setActiveIndex((current) => (current + 1) % images.length);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [images]);
+
+  return <div className="story-card__image">{images.map((image, index) => <img className={index === activeIndex ? "is-active" : ""} src={apiAssetUrl(image)} alt={index === activeIndex ? title : ""} aria-hidden={index === activeIndex ? undefined : true} key={`${image}-${index}`} />)}{images.length > 1 ? <div className="story-card__dots" aria-label={`${title} photo ${activeIndex + 1} of ${images.length}`}>{images.map((_, index) => <button type="button" className={index === activeIndex ? "is-active" : ""} onClick={() => setActiveIndex(index)} aria-label={`Show photo ${index + 1}`} key={index} />)}</div> : null}</div>;
+}
+
 /* =========================================================
    APP
 ========================================================= */
@@ -352,6 +367,7 @@ function App() {
           storyItems: (incoming.storyItems ?? DEFAULT_WEDDING_CONFIG.storyItems).map((item, index) => ({
             ...item,
             image: item.image || DEFAULT_WEDDING_CONFIG.storyItems[index]?.image || DEFAULT_WEDDING_CONFIG.storyItems[0].image,
+            images: item.images?.length ? item.images : [item.image || DEFAULT_WEDDING_CONFIG.storyItems[index]?.image || DEFAULT_WEDDING_CONFIG.storyItems[0].image],
           })),
           features: {
             ...DEFAULT_WEDDING_CONFIG.features,
@@ -1249,7 +1265,7 @@ function App() {
             <div className="story-section__timeline">
               {weddingConfig.storyItems.map((item, index) => (
                 <article className={`story-card${index % 2 ? " story-card--reverse reveal-on-scroll reveal-right" : " reveal-on-scroll reveal-left"}`} key={`${item.title}-${index}`}>
-                  <div className="story-card__image"><img src={apiAssetUrl(item.image)} alt={item.title} /></div>
+                  <StoryImageSlideshow images={item.images.length ? item.images : [item.image]} title={item.title} />
                   <div className="story-card__content"><span className="story-card__number">{String(index + 1).padStart(2, "0")}</span><p className="story-card__eyebrow">{item.eyebrow}</p><h3>{item.title}</h3><p>{item.body}</p></div>
                 </article>
               ))}
