@@ -17,6 +17,8 @@ def test_wedding_content_uses_defaults_and_persists_updates() -> None:
         assert initial.content.features.rsvp is True
         assert initial.content.cover_image == "/images/cover.jpg"
         assert len(initial.content.hero_images) == 5
+        assert len(initial.content.divider_images) == 5
+        assert initial.content.divider_images[3:] == ["", ""]
         assert initial.content.story_items[0].image == "/images/story-1.jpg"
         assert initial.content.story_items[0].images == ["/images/story-1.jpg"]
 

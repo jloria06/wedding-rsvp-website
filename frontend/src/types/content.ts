@@ -61,7 +61,7 @@ export const defaultWeddingContent: WeddingContent = {
   coverImage: "/images/cover.jpg",
   portraitImage: "/images/portrait.jpg",
   heroImages: ["/images/hero-1.jpg", "/images/hero-2.jpg", "/images/hero-3.jpg", "/images/hero-4.jpg", "/images/hero-5.jpg"],
-  dividerImages: ["/images/scroll-divider-1.jpg", "/images/scroll-divider-2.jpg", "/images/scroll-divider-3.jpg"],
+  dividerImages: ["/images/scroll-divider-1.jpg", "/images/scroll-divider-2.jpg", "/images/scroll-divider-3.jpg", "", ""],
   weddingDateIso: "2027-03-20T16:00:00+08:00",
   weddingDateDisplay: "Saturday · March 20, 2027",
   rsvpDeadline: "",

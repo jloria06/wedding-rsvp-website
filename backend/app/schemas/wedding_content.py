@@ -69,10 +69,14 @@ class WeddingContentPayload(ContentModel):
     divider_images: list[str] = Field(
         alias="dividerImages",
         default_factory=lambda: [
-            f"/images/scroll-divider-{index}.jpg" for index in range(1, 4)
+            "/images/scroll-divider-1.jpg",
+            "/images/scroll-divider-2.jpg",
+            "/images/scroll-divider-3.jpg",
+            "",
+            "",
         ],
         min_length=3,
-        max_length=3,
+        max_length=5,
     )
     wedding_date_iso: str = Field(alias="weddingDateIso", min_length=10, max_length=50)
     wedding_date_display: str = Field(
@@ -115,6 +119,8 @@ DEFAULT_WEDDING_CONTENT = WeddingContentPayload.model_validate(
             "/images/scroll-divider-1.jpg",
             "/images/scroll-divider-2.jpg",
             "/images/scroll-divider-3.jpg",
+            "",
+            "",
         ],
         "weddingDateIso": "2027-03-20T16:00:00+08:00",
         "weddingDateDisplay": "Saturday · March 20, 2027",

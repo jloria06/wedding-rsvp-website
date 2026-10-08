@@ -334,7 +334,7 @@ function App() {
           coverImage: incoming.coverImage || DEFAULT_WEDDING_CONFIG.coverImage,
           portraitImage: incoming.portraitImage || DEFAULT_WEDDING_CONFIG.portraitImage,
           heroImages: incoming.heroImages?.length ? incoming.heroImages : DEFAULT_WEDDING_CONFIG.heroImages,
-          dividerImages: incoming.dividerImages?.length === 3 ? incoming.dividerImages : DEFAULT_WEDDING_CONFIG.dividerImages,
+          dividerImages: incoming.dividerImages && incoming.dividerImages.length >= 3 ? [...incoming.dividerImages, "", ""].slice(0, 5) : DEFAULT_WEDDING_CONFIG.dividerImages,
           rsvpDeadline:
             incoming.rsvpDeadline ?? DEFAULT_WEDDING_CONFIG.rsvpDeadline,
           rsvpDeadlineDisplay:
@@ -1642,6 +1642,13 @@ function App() {
             </div>
           </section>
 
+          {scrollDividerImages[3] ? <PhotoDivider
+            image={scrollDividerImages[3]}
+            eyebrow="MORE OF OUR STORY"
+            title="The moments we will always treasure."
+            position="center center"
+          /> : null}
+
           {/* ===============================================
               PART 10: GIFT GUIDE
               Source text/QR paths: wedding-config.json
@@ -1828,6 +1835,13 @@ function App() {
               </div>
             </div>
           </section>
+
+          {scrollDividerImages[4] ? <PhotoDivider
+            image={scrollDividerImages[4]}
+            eyebrow="CELEBRATE WITH US"
+            title="We cannot wait to share this day with you."
+            position="center center"
+          /> : null}
 
           {/* ===============================================
               PART 13: RSVP + SUCCESS ANIMATION

@@ -22,6 +22,10 @@ class WeddingContentService:
             defaults = DEFAULT_WEDDING_CONTENT.model_dump(mode="json", by_alias=True)
             stored = record.content
             merged = {**defaults, **stored}
+            merged["dividerImages"] = (
+                list(stored.get("dividerImages", defaults["dividerImages"]))
+                + ["", ""]
+            )[:5]
             for venue in ("ceremony", "reception"):
                 merged[venue] = {**defaults[venue], **stored.get(venue, {})}
             merged_story_items = []
