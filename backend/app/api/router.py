@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.admin import (
     admin_auth_router,
+    admin_dashboard_router,
     admin_guest_router,
 )
 from app.api.public import (
@@ -18,6 +19,11 @@ api_router.include_router(rsvp_router)
 
 api_router.include_router(
     admin_auth_router,
+    prefix="/admin",
+)
+
+api_router.include_router(
+    admin_dashboard_router,
     prefix="/admin",
 )
 

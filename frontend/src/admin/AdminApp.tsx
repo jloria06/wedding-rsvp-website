@@ -17,10 +17,11 @@ import {
   adminTokenStorageKey,
   changeAdministratorPassword,
   getAdministratorProfile,
+  getDashboardStatistics,
   loginAdministrator,
 } from "./api";
 import "./admin.css";
-import type { AdminProfile } from "./types";
+import type { AdminProfile, DashboardStatistics } from "./types";
 
 function friendlyRole(role: AdminProfile["role"]): string {
   return role.replace("_", " ");
@@ -80,7 +81,7 @@ export function AdminApp() {
       <main className="admin-auth-page">
         <div className="admin-loading" role="status">
           <span />
-          Restoring your secure session…
+          Restoring your secure sessionÃ¢â‚¬Â¦
         </div>
       </main>
     );
@@ -126,7 +127,11 @@ export function AdminApp() {
             profile.is_password_change_required ? (
               <Navigate to="/admin/change-password" replace />
             ) : (
-              <AdminLayout profile={profile} onSignOut={signOut} />
+              <AdminLayout
+                accessToken={accessToken}
+                profile={profile}
+                onSignOut={signOut}
+              />
             )
           ) : (
             <Navigate to="/admin/login" replace />
@@ -170,7 +175,7 @@ function AdminLogin({
     <main className="admin-auth-page">
       <section className="admin-auth-card" aria-labelledby="admin-login-title">
         <a className="admin-back-link" href="/">
-          ← Wedding website
+          Ã¢â€ Â Wedding website
         </a>
         <p className="admin-eyebrow">John Paul & Joyce</p>
         <h1 id="admin-login-title">Management dashboard</h1>
@@ -207,7 +212,7 @@ function AdminLogin({
           {errorMessage ? <p className="admin-error" role="alert">{errorMessage}</p> : null}
 
           <button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in…" : "Sign in"}
+            {isSubmitting ? "Signing inÃ¢â‚¬Â¦" : "Sign in"}
           </button>
         </form>
       </section>
@@ -262,7 +267,7 @@ function AdminPasswordChange({
         <h1 id="password-title">Change your password</h1>
         <p className="admin-intro">
           Welcome, {profile.first_name}. Create a private password before
-          entering the dashboard. You’ll sign in again when it’s saved.
+          entering the dashboard. YouÃ¢â‚¬â„¢ll sign in again when itÃ¢â‚¬â„¢s saved.
         </p>
 
         <form className="admin-form" onSubmit={handleSubmit}>
@@ -307,7 +312,7 @@ function AdminPasswordChange({
           {errorMessage ? <p className="admin-error" role="alert">{errorMessage}</p> : null}
 
           <button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving…" : "Save password"}
+            {isSubmitting ? "SavingÃ¢â‚¬Â¦" : "Save password"}
           </button>
         </form>
       </section>
@@ -316,13 +321,53 @@ function AdminPasswordChange({
 }
 
 function AdminLayout({
+  accessToken,
   profile,
   onSignOut,
 }: {
+  accessToken: string;
   profile: AdminProfile;
   onSignOut: () => void;
 }) {
   const location = useLocation();
+  const [statistics, setStatistics] = useState<DashboardStatistics | null>(null);
+  const [statisticsError, setStatisticsError] = useState("");
+
+  useEffect(() => {
+    let isActive = true;
+
+    getDashboardStatistics(accessToken)
+      .then((response) => {
+        if (!isActive) return;
+        setStatistics(response);
+        setStatisticsError("");
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setStatisticsError(
+          error instanceof ApiError
+            ? error.message
+            : "Dashboard statistics could not be loaded.",
+        );
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [accessToken]);
+
+  const statisticCards = statistics
+    ? [
+        { label: "Total guests", value: statistics.total_guests },
+        { label: "Allocated seats", value: statistics.allocated_seats },
+        { label: "RSVP responses", value: statistics.rsvp_responses },
+        { label: "Attending", value: statistics.attending },
+        { label: "Declined", value: statistics.declined },
+        { label: "Pending", value: statistics.pending },
+        { label: "Adults", value: statistics.adults },
+        { label: "Children", value: statistics.children },
+      ]
+    : [];
 
   return (
     <div className="admin-dashboard">
@@ -356,18 +401,41 @@ function AdminLayout({
           </div>
         </header>
 
-        <section className="admin-welcome" aria-labelledby="foundation-title">
+        <section className="admin-overview-heading" aria-labelledby="overview-title">
           <div>
-            <p className="admin-status-label">Phase 1 ready</p>
-            <h2 id="foundation-title">Your secure dashboard foundation is active.</h2>
-            <p>
-              Authentication, protected routes, session restoration, password
-              changes, and sign out are now connected. Guest and RSVP tools
-              will be added in the next phases.
-            </p>
+            <p className="admin-status-label">Live RSVP overview</p>
+            <h2 id="overview-title">Guest and response summary</h2>
+            <p>Current totals from the wedding guest list and RSVP responses.</p>
           </div>
           <a href="/">View wedding website</a>
         </section>
+
+        {statisticsError ? (
+          <p className="admin-error admin-statistics-error" role="alert">
+            {statisticsError}
+          </p>
+        ) : null}
+
+        {!statistics && !statisticsError ? (
+          <div className="admin-statistics-loading" role="status">
+            <span />
+            Loading dashboard statistics...
+          </div>
+        ) : null}
+
+        {statistics ? (
+          <section className="admin-statistics" aria-label="RSVP statistics">
+            {statisticCards.map((card) => (
+              <article className="admin-statistic-card" key={card.label}>
+                <p>{card.label}</p>
+                <strong>{card.value ?? "N/A"}</strong>
+                {card.value === null ? (
+                  <small>Age data is not collected yet</small>
+                ) : null}
+              </article>
+            ))}
+          </section>
+        ) : null}
       </main>
     </div>
   );

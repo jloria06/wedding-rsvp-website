@@ -27,3 +27,15 @@ export type MessageResponse = {
   success: boolean;
   message: string;
 };
+
+export type DashboardStatistics = {
+  success: boolean;
+  total_guests: number;
+  allocated_seats: number;
+  rsvp_responses: number;
+  attending: number;
+  declined: number;
+  pending: number;
+  adults: number | null;
+  children: number | null;
+};

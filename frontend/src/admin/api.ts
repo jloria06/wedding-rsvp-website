@@ -2,6 +2,7 @@ import { apiRequest } from "../lib/api";
 import type {
   AdminLoginResponse,
   AdminProfile,
+  DashboardStatistics,
   MessageResponse,
 } from "./types";
 
@@ -41,5 +42,15 @@ export function changeAdministratorPassword(
       current_password: currentPassword,
       new_password: newPassword,
     }),
+  });
+}
+
+export function getDashboardStatistics(
+  accessToken: string,
+): Promise<DashboardStatistics> {
+  return apiRequest<DashboardStatistics>("/admin/dashboard/statistics", {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
   });
 }
