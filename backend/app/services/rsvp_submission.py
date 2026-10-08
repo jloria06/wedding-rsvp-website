@@ -8,6 +8,7 @@ from app.core.exceptions import (
 )
 from app.models import (
     RSVP,
+    AttendanceType,
     Companion,
     GuestStatus,
     RSVPStatus,
@@ -101,6 +102,12 @@ class RSVPSubmissionService:
             rsvp.companion_count = 0
             rsvp.meal_preference = None
             rsvp.dietary_restrictions = None
+
+        if (
+            request.status != RSVPStatus.ATTENDING
+            or request.attendance_type == AttendanceType.CEREMONY_ONLY
+        ) and guest.seat_assignment is not None:
+            self.database_session.delete(guest.seat_assignment)
 
         if guest.status == GuestStatus.INVITED:
             guest.status = GuestStatus.VERIFIED

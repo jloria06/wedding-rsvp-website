@@ -11,6 +11,7 @@ from app.models.mixins import SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.rsvp import RSVP
+    from app.models.seating import SeatAssignment
 
 
 class Guest(Base, TimestampMixin, SoftDeleteMixin):
@@ -102,6 +103,12 @@ class Guest(Base, TimestampMixin, SoftDeleteMixin):
     )
 
     rsvp: Mapped[RSVP | None] = relationship(
+        back_populates="guest",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+    seat_assignment: Mapped[SeatAssignment | None] = relationship(
         back_populates="guest",
         uselist=False,
         cascade="all, delete-orphan",

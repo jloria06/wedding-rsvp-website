@@ -5,7 +5,14 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import AuthorizationError, ResourceNotFoundError
-from app.models import RSVP, Companion, Guest, GuestStatus, RSVPStatus
+from app.models import (
+    RSVP,
+    AttendanceType,
+    Companion,
+    Guest,
+    GuestStatus,
+    RSVPStatus,
+)
 from app.repositories import GuestRepository, RSVPRepository
 from app.schemas.admin_rsvp import (
     AdminRSVPListItem,
@@ -72,6 +79,12 @@ class AdminRSVPManagementService:
             rsvp.meal_preference = None
             rsvp.dietary_restrictions = None
             rsvp.companion_count = 0
+
+        if (
+            request.status != RSVPStatus.ATTENDING
+            or request.attendance_type == AttendanceType.CEREMONY_ONLY
+        ) and guest.seat_assignment is not None:
+            self.database_session.delete(guest.seat_assignment)
 
         if guest.status == GuestStatus.INVITED:
             guest.status = GuestStatus.VERIFIED

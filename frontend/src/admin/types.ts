@@ -115,3 +115,42 @@ export type GuestInput = {
 export type GuestUpdate = Omit<GuestInput, "invitation_code"> & {
   status: GuestStatus;
 };
+
+export type SeatingParty = {
+  guest_id: number;
+  invitation_code: string;
+  guest_name: string;
+  household_name: string | null;
+  party_size: number;
+  companion_names: string[];
+};
+
+export type SeatingAssignment = SeatingParty & {
+  assignment_id: number;
+  assigned_at: string;
+};
+
+export type SeatingTable = {
+  id: number;
+  name: string;
+  capacity: number;
+  notes: string | null;
+  assigned_seats: number;
+  remaining_seats: number;
+  assignments: SeatingAssignment[];
+};
+
+export type SeatingOverview = {
+  success: boolean;
+  tables: SeatingTable[];
+  unassigned_parties: SeatingParty[];
+  total_capacity: number;
+  assigned_seats: number;
+  remaining_seats: number;
+};
+
+export type SeatingMutationResponse = {
+  success: boolean;
+  message: string;
+  seating: SeatingOverview;
+};

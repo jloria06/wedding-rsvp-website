@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 from app.database.base import Base
@@ -8,6 +8,8 @@ from app.models import (
     GuestStatus,
     MealPreference,
     RSVPStatus,
+    SeatAssignment,
+    SeatingTable,
 )
 from app.schemas import CompanionInput
 from app.schemas.admin_rsvp import AdminRSVPUpsertRequest
@@ -62,6 +64,12 @@ def test_admin_can_create_and_update_rsvp_with_companions() -> None:
         assert created.rsvp.companions[0].full_name == "Plus One"
         assert guest.status == GuestStatus.VERIFIED
 
+        table = SeatingTable(name="Test Table", capacity=8)
+        session.add(table)
+        session.flush()
+        guest.seat_assignment = SeatAssignment(table_id=table.id)
+        session.flush()
+
         updated = service.upsert_rsvp(
             guest.id,
             AdminRSVPUpsertRequest(status=RSVPStatus.NOT_ATTENDING),
@@ -71,6 +79,9 @@ def test_admin_can_create_and_update_rsvp_with_companions() -> None:
         assert updated.rsvp.companion_count == 0
         assert updated.rsvp.companions == []
         assert updated.rsvp.attendance_type is None
+        assert session.scalar(
+            select(SeatAssignment).where(SeatAssignment.guest_id == guest.id)
+        ) is None
 
 
 def test_admin_rsvp_export_includes_pending_and_completed_guests() -> None:

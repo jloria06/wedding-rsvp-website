@@ -9,6 +9,8 @@ import type {
   MessageResponse,
   AdminRSVP,
   RSVPInput,
+  SeatingMutationResponse,
+  SeatingOverview,
 } from "./types";
 import type { WeddingContent } from "../types/content";
 
@@ -163,4 +165,65 @@ export function uploadAdministratorMedia(
   file: File,
 ): Promise<MediaUploadResponse> {
   return apiUpload<MediaUploadResponse>("/admin/content/media", file, accessToken);
+}
+
+export function getAdministratorSeating(accessToken: string): Promise<SeatingOverview> {
+  return apiRequest<SeatingOverview>("/admin/seating", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function createAdministratorTable(
+  accessToken: string,
+  table: { name: string; capacity: number; notes: string | null },
+): Promise<SeatingMutationResponse> {
+  return apiRequest<SeatingMutationResponse>("/admin/seating/tables", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(table),
+  });
+}
+
+export function updateAdministratorTable(
+  accessToken: string,
+  tableId: number,
+  table: { name: string; capacity: number; notes: string | null },
+): Promise<SeatingMutationResponse> {
+  return apiRequest<SeatingMutationResponse>(`/admin/seating/tables/${tableId}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(table),
+  });
+}
+
+export function deleteAdministratorTable(
+  accessToken: string,
+  tableId: number,
+): Promise<SeatingMutationResponse> {
+  return apiRequest<SeatingMutationResponse>(`/admin/seating/tables/${tableId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function assignAdministratorParty(
+  accessToken: string,
+  guestId: number,
+  tableId: number,
+): Promise<SeatingMutationResponse> {
+  return apiRequest<SeatingMutationResponse>(`/admin/seating/assignments/${guestId}`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ table_id: tableId }),
+  });
+}
+
+export function unassignAdministratorParty(
+  accessToken: string,
+  guestId: number,
+): Promise<SeatingMutationResponse> {
+  return apiRequest<SeatingMutationResponse>(`/admin/seating/assignments/${guestId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
 }
