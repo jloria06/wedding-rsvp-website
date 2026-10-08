@@ -420,3 +420,21 @@
 .admin-editor-actions { display:flex; justify-content:flex-end; gap:.6rem; margin-top:1.25rem; }
 @media (max-width: 900px) { .admin-guest-filters { grid-template-columns:1fr; } .admin-form-grid { grid-template-columns:1fr; } }
 @media (max-width: 760px) { .admin-section-heading { align-items:flex-start; flex-direction:column; } .admin-section-heading > button { width:100%; } }
+
+.admin-section-heading > button:disabled { cursor:wait; opacity:.65; }
+.admin-rsvp-filters { grid-template-columns:minmax(16rem,1fr) minmax(12rem,.35fr); }
+.admin-rsvp-table { min-width:68rem; }
+.admin-status-pill { display:inline-flex; padding:.3rem .55rem; border-radius:999px; background:var(--admin-lavender); color:var(--admin-purple-dark); font-size:.68rem; font-weight:700; }
+.admin-status-pill.is-attending { background:#e3f3e9; color:#27643c; }
+.admin-status-pill.is-not_attending { background:#f8e7e9; color:#8b2f3f; }
+.admin-rsvp-editor .admin-editor-header p:not(.admin-status-label) { margin:.35rem 0 0; color:var(--admin-muted); font-size:.75rem; }
+.admin-rsvp-message { margin-top:1rem; }
+.admin-rsvp-editor textarea { width:100%; padding:.75rem; border:1px solid var(--admin-border); border-radius:.65rem; resize:vertical; font:inherit; }
+.admin-companions { margin-top:1.25rem; }
+.admin-companion-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.admin-companion-heading h3 { margin:0; font-family:"Cormorant Garamond", Georgia, serif; font-size:1.7rem; font-weight:600; }
+.admin-companion-heading button, .admin-remove-companion { padding:.5rem .7rem; border:1px solid var(--admin-border); border-radius:.5rem; background:#fff; color:var(--admin-purple-dark); cursor:pointer; font-weight:700; }
+.admin-companions fieldset { margin-top:.85rem; padding:1rem; border:1px solid var(--admin-border); border-radius:.75rem; }
+.admin-companions legend { padding:0 .4rem; color:var(--admin-muted); font-size:.72rem; font-weight:700; }
+.admin-remove-companion { margin-top:.8rem; color:#8b2f3f; }
+@media (max-width:900px) { .admin-rsvp-filters { grid-template-columns:1fr; } }

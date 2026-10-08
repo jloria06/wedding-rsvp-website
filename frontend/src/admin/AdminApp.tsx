@@ -22,6 +22,7 @@ import {
 } from "./api";
 import "./admin.css";
 import { GuestManagement } from "./GuestManagement";
+import { RSVPManagement } from "./RSVPManagement";
 import type { AdminProfile, DashboardStatistics } from "./types";
 
 function friendlyRole(role: AdminProfile["role"]): string {
@@ -390,6 +391,12 @@ function AdminLayout({
           >
             Guests
           </a>
+          <a
+            className={location.pathname.startsWith("/admin/rsvps") ? "is-active" : ""}
+            href="/admin/rsvps"
+          >
+            RSVPs
+          </a>
         </nav>
         <button className="admin-signout" type="button" onClick={onSignOut}>
           Sign out
@@ -410,6 +417,8 @@ function AdminLayout({
 
         {location.pathname.startsWith("/admin/guests") ? (
           <GuestManagement accessToken={accessToken} role={profile.role} />
+        ) : location.pathname.startsWith("/admin/rsvps") ? (
+          <RSVPManagement accessToken={accessToken} role={profile.role} />
         ) : (
           <>
             <section className="admin-overview-heading" aria-labelledby="overview-title">

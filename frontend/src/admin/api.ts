@@ -1,4 +1,4 @@
-import { apiRequest } from "../lib/api";
+import { apiDownload, apiRequest } from "../lib/api";
 import type {
   AdminLoginResponse,
   AdminProfile,
@@ -7,6 +7,8 @@ import type {
   GuestInput,
   GuestUpdate,
   MessageResponse,
+  AdminRSVP,
+  RSVPInput,
 } from "./types";
 
 export const adminTokenStorageKey = "wedding-rsvp-admin-token";
@@ -96,6 +98,33 @@ export function deactivateAdministratorGuest(
 ): Promise<MessageResponse> {
   return apiRequest<MessageResponse>(`/admin/guests/${guestId}`, {
     method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+type RSVPListResponse = { success: boolean; rsvps: AdminRSVP[]; total: number };
+type RSVPMutationResponse = { success: boolean; message: string; rsvp: AdminRSVP };
+
+export function listAdministratorRsvps(accessToken: string): Promise<RSVPListResponse> {
+  return apiRequest<RSVPListResponse>("/admin/rsvps", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function saveAdministratorRsvp(
+  accessToken: string,
+  guestId: number,
+  rsvp: RSVPInput,
+): Promise<RSVPMutationResponse> {
+  return apiRequest<RSVPMutationResponse>(`/admin/rsvps/${guestId}`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(rsvp),
+  });
+}
+
+export function exportAdministratorRsvps(accessToken: string): Promise<Blob> {
+  return apiDownload("/admin/rsvps/export.csv", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 }

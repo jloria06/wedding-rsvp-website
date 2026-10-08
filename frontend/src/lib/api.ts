@@ -56,3 +56,21 @@ export async function apiRequest<TResponse>(
 
   return payload as TResponse;
 }
+
+export async function apiDownload(
+  path: string,
+  options: RequestInit = {},
+): Promise<Blob> {
+  const response = await fetch(`${apiBaseUrl}${path}`, options);
+  if (!response.ok) {
+    let message = "The file could not be downloaded.";
+    try {
+      const payload = (await response.json()) as ApiErrorPayload;
+      message = payload.error?.message ?? payload.message ?? payload.detail ?? message;
+    } catch {
+      // The server may return a non-JSON error page.
+    }
+    throw new ApiError(message, response.status);
+  }
+  return response.blob();
+}

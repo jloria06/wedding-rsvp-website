@@ -14,6 +14,12 @@ from app.schemas.administrator import (
     AdministratorPasswordChangeResponse,
     AdministratorProfileResponse,
 )
+from app.schemas.admin_rsvp import (
+    AdminRSVPListItem,
+    AdminRSVPListResponse,
+    AdminRSVPMutationResponse,
+    AdminRSVPUpsertRequest,
+)
 from app.schemas.guest import (
     GuestSummaryResponse,
     GuestVerificationRequest,
@@ -34,6 +40,11 @@ __all__ = [
     "AdminGuestListResponse",
     "AdminGuestUpdateRequest",
     "AdminGuestUpdateResponse",
+    "AdminGuestDeleteResponse",
+    "AdminRSVPListItem",
+    "AdminRSVPListResponse",
+    "AdminRSVPMutationResponse",
+    "AdminRSVPUpsertRequest",
     "AdministratorLoginRequest",
     "AdministratorLoginResponse",
     "AdministratorPasswordChangeRequest",
@@ -47,5 +58,4 @@ __all__ = [
     "RSVPResponse",
     "RSVPSubmissionRequest",
     "RSVPSubmissionResponse",
-    AdminGuestDeleteResponse,
 ]

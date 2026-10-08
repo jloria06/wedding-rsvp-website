@@ -4,6 +4,7 @@ from app.api.admin import (
     admin_auth_router,
     admin_dashboard_router,
     admin_guest_router,
+    admin_rsvp_router,
 )
 from app.api.public import (
     guest_router,
@@ -29,5 +30,10 @@ api_router.include_router(
 
 api_router.include_router(
     admin_guest_router,
+    prefix="/admin",
+)
+
+api_router.include_router(
+    admin_rsvp_router,
     prefix="/admin",
 )

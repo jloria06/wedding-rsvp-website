@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models import RSVP
 
@@ -24,6 +24,16 @@ class RSVPRepository:
         self.database_session.flush()
 
         return rsvp
+
+    def list_all(self) -> list[RSVP]:
+        statement = (
+            select(RSVP)
+            .options(joinedload(RSVP.guest), selectinload(RSVP.companions))
+            .join(RSVP.guest)
+            .where(RSVP.guest.has(deleted_at=None))
+            .order_by(RSVP.responded_at.desc(), RSVP.id.desc())
+        )
+        return list(self.database_session.scalars(statement).unique().all())
 
     def delete_companions(self, rsvp: RSVP) -> None:
         rsvp.companions.clear()
