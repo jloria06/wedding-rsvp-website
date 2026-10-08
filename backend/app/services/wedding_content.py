@@ -1,0 +1,41 @@
+from sqlalchemy.orm import Session
+
+from app.models import WeddingContent
+from app.schemas.wedding_content import (
+    DEFAULT_WEDDING_CONTENT,
+    WeddingContentPayload,
+    WeddingContentResponse,
+)
+
+
+class WeddingContentService:
+    CONTENT_ID = 1
+
+    def __init__(self, database_session: Session) -> None:
+        self.database_session = database_session
+
+    def get_content(self) -> WeddingContentResponse:
+        record = self.database_session.get(WeddingContent, self.CONTENT_ID)
+        if record is None:
+            content = DEFAULT_WEDDING_CONTENT
+        else:
+            content = WeddingContentPayload.model_validate(record.content)
+        return WeddingContentResponse(content=content)
+
+    def update_content(
+        self, content: WeddingContentPayload, administrator_id: int
+    ) -> WeddingContentResponse:
+        record = self.database_session.get(WeddingContent, self.CONTENT_ID)
+        serialized = content.model_dump(mode="json", by_alias=True)
+        if record is None:
+            record = WeddingContent(
+                id=self.CONTENT_ID,
+                content=serialized,
+                updated_by_id=administrator_id,
+            )
+            self.database_session.add(record)
+        else:
+            record.content = serialized
+            record.updated_by_id = administrator_id
+        self.database_session.flush()
+        return WeddingContentResponse(content=content)

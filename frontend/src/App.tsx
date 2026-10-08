@@ -3,40 +3,19 @@ import * as XLSX from "xlsx";
 
 import { InvitationVerificationForm } from "./components/InvitationVerificationForm";
 import { RSVPForm } from "./components/RSVPForm";
+import { apiRequest } from "./lib/api";
+import {
+  defaultWeddingContent,
+  type WeddingContent,
+} from "./types/content";
 import type { GuestSummary, RSVPSubmissionResponse } from "./types/rsvp";
 
 /* =========================================================
    TYPES
 ========================================================= */
 
-type GiftMethod = {
-  title: string;
-  owner: string;
-  account?: string;
-  qr?: string;
-  details?: string[];
-  enabled?: boolean;
-};
-
-type WeddingConfig = {
-  rsvpDeadline?: string;
-  rsvpDeadlineDisplay?: string;
-  gift?: {
-    gcash?: GiftMethod;
-    maya?: GiftMethod;
-    bank?: GiftMethod;
-  };
-};
-
-type ResolvedWeddingConfig = {
-  rsvpDeadline: string;
-  rsvpDeadlineDisplay: string;
-  gift: {
-    gcash: GiftMethod;
-    maya: GiftMethod;
-    bank: GiftMethod;
-  };
-};
+type WeddingConfig = Partial<WeddingContent>;
+type ResolvedWeddingConfig = WeddingContent;
 
 type EntouragePerson = {
   role: string;
@@ -50,36 +29,7 @@ type EntourageGroup = {
   people: EntouragePerson[];
 };
 
-const DEFAULT_WEDDING_CONFIG: ResolvedWeddingConfig = {
-  rsvpDeadline: "",
-  rsvpDeadlineDisplay: "RSVP deadline to be announced",
-  gift: {
-    gcash: {
-      title: "GCash",
-      owner: "John Paul",
-      account: "",
-      qr: "",
-      details: [],
-      enabled: true,
-    },
-    maya: {
-      title: "Maya",
-      owner: "Joyce",
-      account: "",
-      qr: "",
-      details: [],
-      enabled: true,
-    },
-    bank: {
-      title: "Bank Transfer",
-      owner: "John Paul & Joyce",
-      account: "",
-      qr: "",
-      details: [],
-      enabled: true,
-    },
-  },
-};
+const DEFAULT_WEDDING_CONFIG: ResolvedWeddingConfig = defaultWeddingContent;
 
 /* =========================================================
    FULL-WIDTH PHOTO DIVIDER
@@ -192,8 +142,6 @@ function App() {
      GLOBAL WEDDING CONFIGURATION
   ------------------------------------------------------- */
 
-  const weddingDate = new Date("2027-03-20T00:00:00+08:00");
-
   const galleryImages = [
     "/images/gallery-1.jpg",
     "/images/gallery-2.jpg",
@@ -263,6 +211,10 @@ function App() {
 
   const [weddingConfig, setWeddingConfig] = useState<ResolvedWeddingConfig>(
     DEFAULT_WEDDING_CONFIG,
+  );
+  const weddingDate = useMemo(
+    () => new Date(weddingConfig.weddingDateIso),
+    [weddingConfig.weddingDateIso],
   );
 
   /* -------------------------------------------------------
@@ -355,21 +307,25 @@ function App() {
 
     async function loadWeddingConfig() {
       try {
-        const response = await fetch("/data/wedding-config.json", {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          return;
+        let incoming: WeddingConfig;
+        try {
+          const response = await apiRequest<{ success: boolean; content: WeddingContent }>(
+            "/wedding-content",
+          );
+          incoming = response.content;
+        } catch {
+          const response = await fetch("/data/wedding-config.json", { cache: "no-store" });
+          if (!response.ok) return;
+          incoming = (await response.json()) as WeddingConfig;
         }
-
-        const incoming = (await response.json()) as WeddingConfig;
 
         if (cancelled) {
           return;
         }
 
         setWeddingConfig({
+          ...DEFAULT_WEDDING_CONFIG,
+          ...incoming,
           rsvpDeadline:
             incoming.rsvpDeadline ?? DEFAULT_WEDDING_CONFIG.rsvpDeadline,
           rsvpDeadlineDisplay:
@@ -388,6 +344,18 @@ function App() {
               ...DEFAULT_WEDDING_CONFIG.gift.bank,
               ...(incoming.gift?.bank ?? {}),
             },
+          },
+          ceremony: {
+            ...DEFAULT_WEDDING_CONFIG.ceremony,
+            ...(incoming.ceremony ?? {}),
+          },
+          reception: {
+            ...DEFAULT_WEDDING_CONFIG.reception,
+            ...(incoming.reception ?? {}),
+          },
+          features: {
+            ...DEFAULT_WEDDING_CONFIG.features,
+            ...(incoming.features ?? {}),
           },
         });
       } catch {
@@ -416,6 +384,21 @@ function App() {
     async function loadEntourage() {
       setEntourageLoading(true);
       setEntourageError("");
+
+      if (weddingConfig.entourageGroups.length > 0) {
+        setEntourageGroups(
+          weddingConfig.entourageGroups.map((group, groupIndex) => ({
+            title: group.title,
+            order: groupIndex + 1,
+            people: group.people.map((person, personIndex) => ({
+              ...person,
+              order: personIndex + 1,
+            })),
+          })),
+        );
+        setEntourageLoading(false);
+        return;
+      }
 
       try {
         const response = await fetch("/data/entourage.xlsx", {
@@ -519,7 +502,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [weddingConfig.entourageGroups]);
 
   /* =======================================================
      LIVE WEDDING COUNTDOWN
@@ -555,7 +538,7 @@ function App() {
     return () => {
       window.clearInterval(timer);
     };
-  }, []);
+  }, [weddingDate]);
 
   /* =======================================================
      CINEMATIC HERO SLIDESHOW
@@ -1042,14 +1025,14 @@ function App() {
             </button>
 
             <div id="wedding-navigation-links" className="wedding-nav__links">
-              <a
+              {weddingConfig.features.story ? <a
                 className={activeSection === "story" ? "is-active" : undefined}
                 href="#story"
                 onClick={closeMobileMenu}
               >
                 Our Story
-              </a>
-              <a
+              </a> : null}
+              {weddingConfig.features.details ? <a
                 className={
                   activeSection === "details" ? "is-active" : undefined
                 }
@@ -1057,8 +1040,8 @@ function App() {
                 onClick={closeMobileMenu}
               >
                 Details
-              </a>
-              <a
+              </a> : null}
+              {weddingConfig.features.entourage ? <a
                 className={
                   activeSection === "entourage" ? "is-active" : undefined
                 }
@@ -1066,7 +1049,7 @@ function App() {
                 onClick={closeMobileMenu}
               >
                 Entourage
-              </a>
+              </a> : null}
               <a
                 className={
                   activeSection === "dresscode" ? "is-active" : undefined
@@ -1085,13 +1068,13 @@ function App() {
               >
                 Moments
               </a>
-              <a
+              {weddingConfig.features.rsvp ? <a
                 className={activeSection === "rsvp" ? "is-active" : undefined}
                 href="#rsvp"
                 onClick={closeMobileMenu}
               >
                 RSVP
-              </a>
+              </a> : null}
             </div>
           </nav>
 
@@ -1257,66 +1240,21 @@ function App() {
               PART 04: OUR STORY
           =============================================== */}
 
-          <section id="story" className="story-section floral-section">
+          {weddingConfig.features.story ? <section id="story" className="story-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>OUR STORY</p>
-              <h2>
-                From the moments we shared,
-                <br />
-                to the journey that brought us here.
-              </h2>
+              <h2>{weddingConfig.storyHeading}</h2>
             </div>
 
             <div className="story-section__timeline">
-              <article className="story-card reveal-on-scroll reveal-left">
-                <div className="story-card__image">
-                  <img src="/images/story-1.jpg" alt="Our beginning" />
-                </div>
-                <div className="story-card__content">
-                  <span className="story-card__number">01</span>
-                  <p className="story-card__eyebrow">HOW IT STARTED</p>
-                  <h3>Our Beginning</h3>
-                  <p>
-                    Every beautiful story starts somewhere. Ours began with
-                    simple moments, conversations, laughter, and a connection
-                    that slowly became something more.
-                  </p>
-                </div>
-              </article>
-
-              <article className="story-card story-card--reverse reveal-on-scroll reveal-right">
-                <div className="story-card__image">
-                  <img src="/images/story-2.jpg" alt="Our journey" />
-                </div>
-                <div className="story-card__content">
-                  <span className="story-card__number">02</span>
-                  <p className="story-card__eyebrow">OUR JOURNEY</p>
-                  <h3>Growing Together</h3>
-                  <p>
-                    Through adventures, ordinary days, milestones, and
-                    challenges, we learned that the best part of the journey was
-                    having each other beside us.
-                  </p>
-                </div>
-              </article>
-
-              <article className="story-card reveal-on-scroll reveal-left">
-                <div className="story-card__image">
-                  <img src="/images/story-3.jpg" alt="The proposal" />
-                </div>
-                <div className="story-card__content">
-                  <span className="story-card__number">03</span>
-                  <p className="story-card__eyebrow">THE NEXT CHAPTER</p>
-                  <h3>Forever Starts Here</h3>
-                  <p>
-                    And now, with grateful hearts, we are ready to begin our
-                    next chapter together and celebrate it with the people who
-                    have been part of our story.
-                  </p>
-                </div>
-              </article>
+              {weddingConfig.storyItems.map((item, index) => (
+                <article className={`story-card${index % 2 ? " story-card--reverse reveal-on-scroll reveal-right" : " reveal-on-scroll reveal-left"}`} key={`${item.title}-${index}`}>
+                  <div className="story-card__image"><img src={`/images/story-${Math.min(index + 1, 3)}.jpg`} alt={item.title} /></div>
+                  <div className="story-card__content"><span className="story-card__number">{String(index + 1).padStart(2, "0")}</span><p className="story-card__eyebrow">{item.eyebrow}</p><h3>{item.title}</h3><p>{item.body}</p></div>
+                </article>
+              ))}
             </div>
-          </section>
+          </section> : null}
 
           {/* ===============================================
               FULL-WIDTH PHOTO DIVIDER #1
@@ -1335,11 +1273,11 @@ function App() {
               PART 05: SAVE THE DATE + VENUES
           =============================================== */}
 
-          <section id="details" className="details-section floral-section">
+          {weddingConfig.features.details ? <section id="details" className="details-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>THE BIG DAY</p>
               <h2 className="script-heading">Save the Date</h2>
-              <p className="wedding-date-display">Saturday · March 20, 2027</p>
+              <p className="wedding-date-display">{weddingConfig.weddingDateDisplay}</p>
               <span>
                 We cannot wait to celebrate this special day with you.
               </span>
@@ -1368,21 +1306,17 @@ function App() {
               <article className="venue-card reveal-on-scroll reveal-up">
                 <img
                   src="/images/ceremony.jpg"
-                  alt="Diocesan Shrine and Parish of Saint Pio of Pietrelcina"
+                  alt={weddingConfig.ceremony.name}
                 />
                 <div className="venue-card__overlay" />
                 <div className="venue-card__content">
                   <p>CEREMONY</p>
-                  <h3>
-                    Diocesan Shrine and Parish of Saint Pio of Pietrelcina
-                  </h3>
-                  <span className="venue-card__time">4:00 PM</span>
-                  <span className="venue-card__address">
-                    106 Sumulong Hwy, Antipolo, 1870 Rizal
-                  </span>
+                  <h3>{weddingConfig.ceremony.name}</h3>
+                  <span className="venue-card__time">{weddingConfig.ceremony.time}</span>
+                  <span className="venue-card__address">{weddingConfig.ceremony.address}</span>
                   <a
                     className="venue-card__map-button"
-                    href="https://maps.app.goo.gl/ywzhGAg79RuC541s8"
+                    href={weddingConfig.ceremony.mapUrl}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -1394,19 +1328,17 @@ function App() {
               <article className="venue-card reveal-on-scroll reveal-up">
                 <img
                   src="/images/reception.jpg"
-                  alt="LeBlanc Hotel and Resort"
+                  alt={weddingConfig.reception.name}
                 />
                 <div className="venue-card__overlay" />
                 <div className="venue-card__content">
                   <p>RECEPTION</p>
-                  <h3>LeBlanc Hotel and Resort</h3>
-                  <span className="venue-card__time">6:00 PM</span>
-                  <span className="venue-card__address">
-                    3 Taktak Rd, Antipolo, 1870 Rizal
-                  </span>
+                  <h3>{weddingConfig.reception.name}</h3>
+                  <span className="venue-card__time">{weddingConfig.reception.time}</span>
+                  <span className="venue-card__address">{weddingConfig.reception.address}</span>
                   <a
                     className="venue-card__map-button"
-                    href="https://maps.app.goo.gl/s6W7RyrZj3EhZxxbA"
+                    href={weddingConfig.reception.mapUrl}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -1415,7 +1347,7 @@ function App() {
                 </div>
               </article>
             </div>
-          </section>
+          </section> : null}
 
           {/* ===============================================
               PART 06: ANIMATED WEDDING TIMELINE
@@ -1491,7 +1423,7 @@ function App() {
               Source: /public/data/entourage.xlsx
           =============================================== */}
 
-          <section id="entourage" className="entourage-section floral-section">
+          {weddingConfig.features.entourage ? <section id="entourage" className="entourage-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>THE PEOPLE WE LOVE</p>
               <h2 className="script-heading">Entourage</h2>
@@ -1562,7 +1494,7 @@ function App() {
                 ) : null}
               </div>
             ) : null}
-          </section>
+          </section> : null}
 
           {/* ===============================================
               FULL-WIDTH PHOTO DIVIDER #3
@@ -1699,7 +1631,7 @@ function App() {
               Source text/QR paths: wedding-config.json
           =============================================== */}
 
-          <section id="gift" className="gift-section floral-section">
+          {weddingConfig.features.gift ? <section id="gift" className="gift-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>WITH LOVE</p>
               <h2 className="script-heading">Gift Guide</h2>
@@ -1769,7 +1701,7 @@ function App() {
             <p className="gift-section__closing">
               Thank you for your love, prayers, and support.
             </p>
-          </section>
+          </section> : null}
 
           {/* ===============================================
               PART 11: FRIENDLY REMINDERS
@@ -1885,7 +1817,7 @@ function App() {
               PART 13: RSVP + SUCCESS ANIMATION
           =============================================== */}
 
-          <section id="rsvp" className="rsvp-section floral-section">
+          {weddingConfig.features.rsvp ? <section id="rsvp" className="rsvp-section floral-section">
             <div className="section-heading reveal-on-scroll reveal-heading">
               <p>WILL YOU JOIN US?</p>
               <h2 className="script-heading">RSVP</h2>
@@ -1977,7 +1909,7 @@ function App() {
                 ) : null}
               </div>
             </div>
-          </section>
+          </section> : null}
 
           {/* ===============================================
               PART 14: ANIMATED CLOSING
@@ -2009,9 +1941,9 @@ function App() {
               </p>
               <p className="closing-section__location">Antipolo, Rizal</p>
 
-              <a className="closing-section__rsvp-button" href="#rsvp">
+              {weddingConfig.features.rsvp ? <a className="closing-section__rsvp-button" href="#rsvp">
                 RSVP NOW
-              </a>
+              </a> : null}
 
               <p className="closing-section__copyright">
                 John Paul & Joyce Wedding

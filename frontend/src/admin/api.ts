@@ -10,6 +10,7 @@ import type {
   AdminRSVP,
   RSVPInput,
 } from "./types";
+import type { WeddingContent } from "../types/content";
 
 export const adminTokenStorageKey = "wedding-rsvp-admin-token";
 
@@ -126,5 +127,24 @@ export function saveAdministratorRsvp(
 export function exportAdministratorRsvps(accessToken: string): Promise<Blob> {
   return apiDownload("/admin/rsvps/export.csv", {
     headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+type WeddingContentResponse = { success: boolean; content: WeddingContent };
+
+export function getAdministratorContent(accessToken: string): Promise<WeddingContentResponse> {
+  return apiRequest<WeddingContentResponse>("/admin/content", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function updateAdministratorContent(
+  accessToken: string,
+  content: WeddingContent,
+): Promise<WeddingContentResponse> {
+  return apiRequest<WeddingContentResponse>("/admin/content", {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(content),
   });
 }

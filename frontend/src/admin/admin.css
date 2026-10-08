@@ -438,3 +438,23 @@
 .admin-companions legend { padding:0 .4rem; color:var(--admin-muted); font-size:.72rem; font-weight:700; }
 .admin-remove-companion { margin-top:.8rem; color:#8b2f3f; }
 @media (max-width:900px) { .admin-rsvp-filters { grid-template-columns:1fr; } }
+
+.admin-success { padding:.8rem; border-radius:.6rem; background:#e3f3e9; color:#27643c; font-size:.8rem; }
+.admin-content-form { display:grid; gap:1rem; }
+.admin-content-card { padding:1.4rem; border:1px solid var(--admin-border); border-radius:1rem; background:var(--admin-ivory); }
+.admin-content-card h3 { margin:0 0 1rem; font-family:"Cormorant Garamond", Georgia, serif; font-size:1.8rem; font-weight:600; }
+.admin-content-card fieldset { margin:1rem 0 0; padding:1rem; border:1px solid var(--admin-border); border-radius:.75rem; }
+.admin-content-card legend { padding:0 .4rem; color:var(--admin-purple-dark); font-size:.75rem; font-weight:700; text-transform:capitalize; }
+.admin-content-card label { display:grid; gap:.4rem; margin-top:.75rem; font-size:.75rem; font-weight:700; }
+.admin-content-card input, .admin-content-card textarea { width:100%; padding:.7rem .8rem; border:1px solid var(--admin-border); border-radius:.6rem; background:#fff; color:var(--admin-ink); font:inherit; }
+.admin-content-card textarea { resize:vertical; }
+.admin-content-card .admin-checkbox { display:flex; flex-direction:row; align-items:center; }
+.admin-content-card .admin-checkbox input { width:auto; }
+.admin-content-help { color:var(--admin-muted); font-size:.76rem; }
+.admin-content-add, .admin-content-remove { margin-top:1rem; padding:.55rem .75rem; border:1px solid var(--admin-border); border-radius:.55rem; background:#fff; color:var(--admin-purple-dark); cursor:pointer; font-weight:700; }
+.admin-content-remove { color:#8b2f3f; }
+.admin-feature-switches { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.5rem; }
+.admin-content-save { position:sticky; bottom:1rem; display:flex; justify-content:flex-end; padding:1rem; border:1px solid var(--admin-border); border-radius:1rem; background:rgba(255,253,249,.96); box-shadow:0 .7rem 2rem rgba(72,54,82,.12); }
+.admin-content-save button { min-height:2.8rem; padding:.7rem 1.2rem; border:0; border-radius:.65rem; background:var(--admin-purple-dark); color:#fff; cursor:pointer; font-weight:700; }
+.admin-content-save button:disabled { cursor:wait; opacity:.65; }
+@media (max-width:760px) { .admin-feature-switches { grid-template-columns:1fr; } }

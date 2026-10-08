@@ -12,6 +12,7 @@ from app.models.enums import (
 from app.models.guest import Guest
 from app.models.mixins import SoftDeleteMixin, TimestampMixin
 from app.models.rsvp import RSVP
+from app.models.wedding_content import WeddingContent
 
 __all__ = [
     "AdminRole",
@@ -27,4 +28,5 @@ __all__ = [
     "RSVPStatus",
     "SoftDeleteMixin",
     "TimestampMixin",
+    "WeddingContent",
 ]

@@ -1,0 +1,84 @@
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+
+import { ApiError } from "../lib/api";
+import { defaultWeddingContent, type WeddingContent } from "../types/content";
+import { getAdministratorContent, updateAdministratorContent } from "./api";
+import type { AdminRole } from "./types";
+
+const giftKeys = ["gcash", "maya", "bank"] as const;
+
+export function ContentManagement({ accessToken, role }: { accessToken: string; role: AdminRole }) {
+  const [content, setContent] = useState<WeddingContent>(defaultWeddingContent);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const canManage = role !== "viewer";
+
+  useEffect(() => {
+    let active = true;
+    getAdministratorContent(accessToken)
+      .then((response) => { if (active) setContent(response.content); })
+      .catch((error) => { if (active) setErrorMessage(error instanceof ApiError ? error.message : "Wedding content could not be loaded."); })
+      .finally(() => { if (active) setIsLoading(false); });
+    return () => { active = false; };
+  }, [accessToken]);
+
+  async function save(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    setIsSaving(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      const response = await updateAdministratorContent(accessToken, content);
+      setContent(response.content);
+      setSuccessMessage("Wedding website content saved successfully.");
+    } catch (error) {
+      setErrorMessage(error instanceof ApiError ? error.message : "Wedding content could not be saved.");
+    } finally { setIsSaving(false); }
+  }
+
+  if (isLoading) return <p className="admin-table-message">Loading wedding content...</p>;
+
+  return (
+    <section className="admin-guests admin-content" aria-labelledby="content-management-title">
+      <div className="admin-section-heading"><div><p className="admin-status-label">Phase 5</p><h2 id="content-management-title">Wedding content</h2><p>Manage the public website details without editing source files.</p></div></div>
+      {errorMessage ? <p className="admin-error" role="alert">{errorMessage}</p> : null}
+      {successMessage ? <p className="admin-success" role="status">{successMessage}</p> : null}
+      <form className="admin-content-form" onSubmit={save}>
+        <ContentSection title="Wedding settings">
+          <div className="admin-form-grid"><label>Wedding date and time<input type="datetime-local" value={content.weddingDateIso.slice(0, 16)} onChange={(event) => setContent({...content, weddingDateIso:`${event.target.value}:00+08:00`})} disabled={!canManage} required /></label><label>Displayed wedding date<input value={content.weddingDateDisplay} onChange={(event) => setContent({...content, weddingDateDisplay:event.target.value})} disabled={!canManage} required /></label><label>RSVP deadline<input type="date" value={content.rsvpDeadline} onChange={(event) => setContent({...content, rsvpDeadline:event.target.value})} disabled={!canManage} /></label><label>Displayed RSVP deadline<input value={content.rsvpDeadlineDisplay} onChange={(event) => setContent({...content, rsvpDeadlineDisplay:event.target.value})} disabled={!canManage} required /></label></div>
+        </ContentSection>
+
+        <ContentSection title="Venues">
+          {(["ceremony", "reception"] as const).map((key) => <fieldset key={key}><legend>{key}</legend><div className="admin-form-grid"><label>Name<input value={content[key].name} onChange={(event) => setContent({...content, [key]:{...content[key], name:event.target.value}})} disabled={!canManage} required /></label><label>Time<input value={content[key].time} onChange={(event) => setContent({...content, [key]:{...content[key], time:event.target.value}})} disabled={!canManage} required /></label><label>Address<input value={content[key].address} onChange={(event) => setContent({...content, [key]:{...content[key], address:event.target.value}})} disabled={!canManage} required /></label><label>Google Maps URL<input type="url" value={content[key].mapUrl} onChange={(event) => setContent({...content, [key]:{...content[key], mapUrl:event.target.value}})} disabled={!canManage} required /></label></div></fieldset>)}
+        </ContentSection>
+
+        <ContentSection title="Our Story">
+          <label>Section heading<textarea rows={2} value={content.storyHeading} onChange={(event) => setContent({...content, storyHeading:event.target.value})} disabled={!canManage} /></label>
+          {content.storyItems.map((item, index) => <fieldset key={index}><legend>Story {index + 1}</legend><div className="admin-form-grid"><label>Eyebrow<input value={item.eyebrow} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, eyebrow:event.target.value} : entry)})} disabled={!canManage} /></label><label>Title<input value={item.title} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, title:event.target.value} : entry)})} disabled={!canManage} required /></label></div><label>Story text<textarea rows={3} value={item.body} onChange={(event) => setContent({...content, storyItems:content.storyItems.map((entry, entryIndex) => entryIndex === index ? {...entry, body:event.target.value} : entry)})} disabled={!canManage} required /></label></fieldset>)}
+        </ContentSection>
+
+        <ContentSection title="Entourage">
+          <p className="admin-content-help">Add one person per line using <code>Role | Name</code>. The role may be left blank.</p>
+          {content.entourageGroups.map((group, index) => <fieldset key={index}><legend>Group {index + 1}</legend><label>Group title<input value={group.title} onChange={(event) => setContent({...content, entourageGroups:content.entourageGroups.map((entry, entryIndex) => entryIndex === index ? {...entry, title:event.target.value} : entry)})} disabled={!canManage} required /></label><label>People<textarea rows={5} value={group.people.map((person) => `${person.role} | ${person.name}`).join("\n")} onChange={(event) => setContent({...content, entourageGroups:content.entourageGroups.map((entry, entryIndex) => entryIndex === index ? {...entry, people:event.target.value.split("\n").filter(Boolean).map((line) => { const [role, ...name] = line.split("|"); return {role:role.trim(), name:name.join("|").trim() || role.trim()}; })} : entry)})} disabled={!canManage} /></label>{canManage ? <button className="admin-content-remove" type="button" onClick={() => setContent({...content, entourageGroups:content.entourageGroups.filter((_, entryIndex) => entryIndex !== index)})}>Remove group</button> : null}</fieldset>)}
+          {canManage ? <button className="admin-content-add" type="button" onClick={() => setContent({...content, entourageGroups:[...content.entourageGroups, {title:"New group", people:[]}]})}>Add entourage group</button> : null}
+        </ContentSection>
+
+        <ContentSection title="Gift details">
+          {giftKeys.map((key) => { const method = content.gift[key]; return <fieldset key={key}><legend>{method.title}</legend><label className="admin-checkbox"><input type="checkbox" checked={method.enabled} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, enabled:event.target.checked}}})} disabled={!canManage} />Show this gift method</label><div className="admin-form-grid"><label>Title<input value={method.title} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, title:event.target.value}}})} disabled={!canManage} required /></label><label>Account owner<input value={method.owner} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, owner:event.target.value}}})} disabled={!canManage} /></label><label>Account number/details<input value={method.account} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, account:event.target.value}}})} disabled={!canManage} /></label><label>QR image path<input value={method.qr} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, qr:event.target.value}}})} disabled={!canManage} /></label></div><label>Additional details<textarea rows={3} value={method.details.join("\n")} onChange={(event) => setContent({...content, gift:{...content.gift, [key]:{...method, details:event.target.value.split("\n").filter(Boolean)}}})} disabled={!canManage} /></label></fieldset>; })}
+        </ContentSection>
+
+        <ContentSection title="Feature switches">
+          <div className="admin-feature-switches">{Object.entries(content.features).map(([key, enabled]) => <label className="admin-checkbox" key={key}><input type="checkbox" checked={enabled} onChange={(event) => setContent({...content, features:{...content.features, [key]:event.target.checked}})} disabled={!canManage} />Show {key} section</label>)}</div>
+        </ContentSection>
+
+        {canManage ? <div className="admin-content-save"><button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save website content"}</button></div> : null}
+      </form>
+    </section>
+  );
+}
+
+function ContentSection({ title, children }: { title: string; children: ReactNode }) {
+  return <section className="admin-content-card"><h3>{title}</h3>{children}</section>;
+}
