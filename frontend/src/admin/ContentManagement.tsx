@@ -11,6 +11,8 @@ export function ContentManagement({ accessToken, role }: { accessToken: string; 
   const [content, setContent] = useState<WeddingContent>(defaultWeddingContent);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingHeroImages, setIsUploadingHeroImages] = useState(false);
+  const [heroUploadError, setHeroUploadError] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const canManage = role !== "viewer";
@@ -38,6 +40,29 @@ export function ContentManagement({ accessToken, role }: { accessToken: string; 
     } finally { setIsSaving(false); }
   }
 
+  async function addHeroImages(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const files = Array.from(event.target.files ?? []);
+    if (!files.length) return;
+    setIsUploadingHeroImages(true);
+    setHeroUploadError("");
+    const uploadedImages: string[] = [];
+    try {
+      for (const file of files) {
+        const response = await uploadAdministratorMedia(accessToken, file);
+        uploadedImages.push(response.url);
+      }
+      setContent((current) => ({...current, heroImages:[...current.heroImages, ...uploadedImages]}));
+    } catch (error) {
+      if (uploadedImages.length) {
+        setContent((current) => ({...current, heroImages:[...current.heroImages, ...uploadedImages]}));
+      }
+      setHeroUploadError(error instanceof ApiError ? error.message : "One or more hero images could not be uploaded.");
+    } finally {
+      setIsUploadingHeroImages(false);
+      event.target.value = "";
+    }
+  }
+
   if (isLoading) return <p className="admin-table-message">Loading wedding content...</p>;
 
   return (
@@ -56,7 +81,7 @@ export function ContentManagement({ accessToken, role }: { accessToken: string; 
             <ImageField label="Invitation background" value={content.coverImage} accessToken={accessToken} disabled={!canManage} onChange={(coverImage) => setContent({...content, coverImage})} />
             <ImageField label="Invitation portrait" value={content.portraitImage} accessToken={accessToken} disabled={!canManage} onChange={(portraitImage) => setContent({...content, portraitImage})} />
           </div>
-          <fieldset><legend>Opening hero slideshow</legend><div className="admin-media-grid">{content.heroImages.map((image, index) => <ImageField key={index} label={`Hero image ${index + 1}`} value={image} accessToken={accessToken} disabled={!canManage} onChange={(value) => setContent({...content, heroImages:content.heroImages.map((entry, entryIndex) => entryIndex === index ? value : entry)})} />)}</div></fieldset>
+          <fieldset><legend>Opening hero slideshow</legend><p className="admin-content-help">Add as many slideshow images as needed. You can select several files at once.</p><div className="admin-media-grid">{content.heroImages.map((image, index) => <ImageField key={`${image}-${index}`} label={`Hero image ${index + 1}`} value={image} accessToken={accessToken} disabled={!canManage} onChange={(value) => setContent({...content, heroImages:content.heroImages.map((entry, entryIndex) => entryIndex === index ? value : entry)})} onRemove={content.heroImages.length > 1 ? () => setContent({...content, heroImages:content.heroImages.filter((_, entryIndex) => entryIndex !== index)}) : undefined} />)}</div>{canManage ? <label className="admin-media-add">{isUploadingHeroImages ? "Uploading images..." : "Add images"}<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={addHeroImages} disabled={isUploadingHeroImages} /></label> : null}{heroUploadError ? <p className="admin-media-error" role="alert">{heroUploadError}</p> : null}</fieldset>
           <fieldset><legend>Full-width divider backgrounds</legend><div className="admin-media-grid">{content.dividerImages.map((image, index) => <ImageField key={index} label={`Divider image ${index + 1}`} value={image} accessToken={accessToken} disabled={!canManage} onChange={(value) => setContent({...content, dividerImages:content.dividerImages.map((entry, entryIndex) => entryIndex === index ? value : entry)})} />)}</div></fieldset>
         </ContentSection>
 
@@ -83,7 +108,7 @@ export function ContentManagement({ accessToken, role }: { accessToken: string; 
           <div className="admin-feature-switches">{Object.entries(content.features).map(([key, enabled]) => <label className="admin-checkbox" key={key}><input type="checkbox" checked={enabled} onChange={(event) => setContent({...content, features:{...content.features, [key]:event.target.checked}})} disabled={!canManage} />Show {key} section</label>)}</div>
         </ContentSection>
 
-        {canManage ? <div className="admin-content-save"><button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save website content"}</button></div> : null}
+        {canManage ? <div className="admin-content-save"><button type="submit" disabled={isSaving || isUploadingHeroImages}>{isSaving ? "Saving..." : "Save website content"}</button></div> : null}
       </form>
     </section>
   );
@@ -93,7 +118,7 @@ function ContentSection({ title, children }: { title: string; children: ReactNod
   return <section className="admin-content-card"><h3>{title}</h3>{children}</section>;
 }
 
-function ImageField({ label, value, accessToken, disabled, onChange }: { label: string; value: string; accessToken: string; disabled: boolean; onChange: (value: string) => void }) {
+function ImageField({ label, value, accessToken, disabled, onChange, onRemove }: { label: string; value: string; accessToken: string; disabled: boolean; onChange: (value: string) => void; onRemove?: () => void }) {
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -113,5 +138,5 @@ function ImageField({ label, value, accessToken, disabled, onChange }: { label: 
     }
   }
 
-  return <div className="admin-media-field"><span>{label}</span>{value ? <img src={apiAssetUrl(value)} alt={`${label} preview`} /> : <div className="admin-media-empty">No image uploaded</div>}<label className="admin-media-button">{isUploading ? "Uploading..." : "Choose image"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={upload} disabled={disabled || isUploading} /></label>{errorMessage ? <small className="admin-media-error" role="alert">{errorMessage}</small> : null}</div>;
+  return <div className="admin-media-field"><span>{label}</span>{value ? <img src={apiAssetUrl(value)} alt={`${label} preview`} /> : <div className="admin-media-empty">No image uploaded</div>}<div className="admin-media-actions"><label className="admin-media-button">{isUploading ? "Uploading..." : "Choose image"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={upload} disabled={disabled || isUploading} /></label>{onRemove && !disabled ? <button className="admin-media-remove" type="button" onClick={onRemove}>Remove</button> : null}</div>{errorMessage ? <small className="admin-media-error" role="alert">{errorMessage}</small> : null}</div>;
 }

@@ -23,6 +23,9 @@ def test_wedding_content_uses_defaults_and_persists_updates() -> None:
         updated_content.rsvp_deadline = "2027-02-20"
         updated_content.rsvp_deadline_display = "February 20, 2027"
         updated_content.features.gift = False
+        updated_content.hero_images = [
+            f"/api/wedding-content/media/{index}" for index in range(1, 26)
+        ]
 
         service.update_content(updated_content, administrator_id=1)
         persisted = service.get_content()
@@ -30,3 +33,4 @@ def test_wedding_content_uses_defaults_and_persists_updates() -> None:
         assert persisted.content.rsvp_deadline == "2027-02-20"
         assert persisted.content.rsvp_deadline_display == "February 20, 2027"
         assert persisted.content.features.gift is False
+        assert len(persisted.content.hero_images) == 25

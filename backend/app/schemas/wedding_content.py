@@ -64,7 +64,6 @@ class WeddingContentPayload(ContentModel):
         alias="heroImages",
         default_factory=lambda: [f"/images/hero-{index}.jpg" for index in range(1, 6)],
         min_length=1,
-        max_length=10,
     )
     divider_images: list[str] = Field(
         alias="dividerImages",
