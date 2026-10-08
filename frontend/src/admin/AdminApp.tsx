@@ -81,7 +81,7 @@ export function AdminApp() {
       <main className="admin-auth-page">
         <div className="admin-loading" role="status">
           <span />
-          Restoring your secure sessionÃ¢â‚¬Â¦
+          Restoring your secure session...
         </div>
       </main>
     );
@@ -175,7 +175,7 @@ function AdminLogin({
     <main className="admin-auth-page">
       <section className="admin-auth-card" aria-labelledby="admin-login-title">
         <a className="admin-back-link" href="/">
-          Ã¢â€ Â Wedding website
+          Back to wedding website
         </a>
         <p className="admin-eyebrow">John Paul & Joyce</p>
         <h1 id="admin-login-title">Management dashboard</h1>
@@ -212,7 +212,7 @@ function AdminLogin({
           {errorMessage ? <p className="admin-error" role="alert">{errorMessage}</p> : null}
 
           <button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Signing inÃ¢â‚¬Â¦" : "Sign in"}
+            {isSubmitting ? "Signing in..." : "Sign in"}
           </button>
         </form>
       </section>
@@ -267,7 +267,7 @@ function AdminPasswordChange({
         <h1 id="password-title">Change your password</h1>
         <p className="admin-intro">
           Welcome, {profile.first_name}. Create a private password before
-          entering the dashboard. YouÃ¢â‚¬â„¢ll sign in again when itÃ¢â‚¬â„¢s saved.
+          entering the dashboard. You'll sign in again when it's saved.
         </p>
 
         <form className="admin-form" onSubmit={handleSubmit}>
@@ -312,7 +312,7 @@ function AdminPasswordChange({
           {errorMessage ? <p className="admin-error" role="alert">{errorMessage}</p> : null}
 
           <button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "SavingÃ¢â‚¬Â¦" : "Save password"}
+            {isSubmitting ? "Saving..." : "Save password"}
           </button>
         </form>
       </section>
