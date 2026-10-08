@@ -39,3 +39,42 @@ export type DashboardStatistics = {
   adults: number | null;
   children: number | null;
 };
+
+export type AgeGroup = "adult" | "child";
+export type GuestStatus = "invited" | "verified" | "blocked";
+export type RSVPStatus = "pending" | "attending" | "not_attending";
+
+export type AdminGuest = {
+  id: number;
+  invitation_code: string;
+  full_name: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  email: string | null;
+  phone_number: string | null;
+  household_name: string | null;
+  maximum_companions: number;
+  age_group: AgeGroup;
+  is_primary_guest: boolean;
+  status: GuestStatus;
+  rsvp_status: RSVPStatus | null;
+  created_at: string;
+};
+
+export type GuestInput = {
+  invitation_code: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  email: string | null;
+  phone_number: string | null;
+  household_name: string | null;
+  maximum_companions: number;
+  age_group: AgeGroup;
+  is_primary_guest: boolean;
+};
+
+export type GuestUpdate = Omit<GuestInput, "invitation_code"> & {
+  status: GuestStatus;
+};

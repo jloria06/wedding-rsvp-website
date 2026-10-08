@@ -1,7 +1,7 @@
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
-from app.models import RSVP, Guest, RSVPStatus
+from app.models import RSVP, AgeGroup, Guest, RSVPStatus
 from app.schemas.admin_dashboard import AdminDashboardStatisticsResponse
 
 
@@ -36,6 +36,14 @@ class AdminDashboardService:
                     ),
                     0,
                 ),
+                func.coalesce(
+                    func.sum(case((Guest.age_group == AgeGroup.ADULT, 1), else_=0)),
+                    0,
+                ),
+                func.coalesce(
+                    func.sum(case((Guest.age_group == AgeGroup.CHILD, 1), else_=0)),
+                    0,
+                ),
             )
             .select_from(Guest)
             .outerjoin(RSVP, RSVP.guest_id == Guest.id)
@@ -53,4 +61,6 @@ class AdminDashboardService:
             attending=int(row[3]),
             declined=int(row[4]),
             pending=total_guests - rsvp_responses,
+            adults=int(row[5]),
+            children=int(row[6]),
         )

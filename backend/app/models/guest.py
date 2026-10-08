@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Enum, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
-from app.models.enums import GuestStatus
+from app.models.enums import AgeGroup, GuestStatus
 from app.models.mixins import SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
@@ -64,6 +64,18 @@ class Guest(Base, TimestampMixin, SoftDeleteMixin):
     maximum_companions: Mapped[int] = mapped_column(
         default=0,
         nullable=False,
+    )
+
+    age_group: Mapped[AgeGroup] = mapped_column(
+        Enum(
+            AgeGroup,
+            name="age_group",
+            native_enum=False,
+            length=16,
+        ),
+        default=AgeGroup.ADULT,
+        nullable=False,
+        index=True,
     )
 
     is_primary_guest: Mapped[bool] = mapped_column(

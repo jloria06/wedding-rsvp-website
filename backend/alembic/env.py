@@ -33,9 +33,15 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
+    connect_args = {}
+
+    if settings.database_ssl_ca:
+        connect_args["ssl"] = {"ca": settings.database_ssl_ca}
+
     connectable = create_engine(
         settings.sqlalchemy_database_url,
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
 
     with connectable.connect() as connection:

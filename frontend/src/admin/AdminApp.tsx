@@ -21,6 +21,7 @@ import {
   loginAdministrator,
 } from "./api";
 import "./admin.css";
+import { GuestManagement } from "./GuestManagement";
 import type { AdminProfile, DashboardStatistics } from "./types";
 
 function friendlyRole(role: AdminProfile["role"]): string {
@@ -383,6 +384,12 @@ function AdminLayout({
           >
             Overview
           </a>
+          <a
+            className={location.pathname.startsWith("/admin/guests") ? "is-active" : ""}
+            href="/admin/guests"
+          >
+            Guests
+          </a>
         </nav>
         <button className="admin-signout" type="button" onClick={onSignOut}>
           Sign out
@@ -401,7 +408,11 @@ function AdminLayout({
           </div>
         </header>
 
-        <section className="admin-overview-heading" aria-labelledby="overview-title">
+        {location.pathname.startsWith("/admin/guests") ? (
+          <GuestManagement accessToken={accessToken} role={profile.role} />
+        ) : (
+          <>
+            <section className="admin-overview-heading" aria-labelledby="overview-title">
           <div>
             <p className="admin-status-label">Live RSVP overview</p>
             <h2 id="overview-title">Guest and response summary</h2>
@@ -423,19 +434,18 @@ function AdminLayout({
           </div>
         ) : null}
 
-        {statistics ? (
-          <section className="admin-statistics" aria-label="RSVP statistics">
-            {statisticCards.map((card) => (
-              <article className="admin-statistic-card" key={card.label}>
-                <p>{card.label}</p>
-                <strong>{card.value ?? "N/A"}</strong>
-                {card.value === null ? (
-                  <small>Age data is not collected yet</small>
-                ) : null}
-              </article>
-            ))}
-          </section>
-        ) : null}
+            {statistics ? (
+              <section className="admin-statistics" aria-label="RSVP statistics">
+                {statisticCards.map((card) => (
+                  <article className="admin-statistic-card" key={card.label}>
+                    <p>{card.label}</p>
+                    <strong>{card.value ?? "N/A"}</strong>
+                  </article>
+                ))}
+              </section>
+            ) : null}
+          </>
+        )}
       </main>
     </div>
   );

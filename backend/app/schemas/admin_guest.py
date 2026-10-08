@@ -2,16 +2,22 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field
 
-from app.models.enums import GuestStatus, RSVPStatus
+from app.models.enums import AgeGroup, GuestStatus, RSVPStatus
 
 
 class AdminGuestListItem(BaseModel):
     id: int
     invitation_code: str
     full_name: str
+    first_name: str
+    middle_name: str | None
+    last_name: str
     email: str | None
+    phone_number: str | None
     household_name: str | None
     maximum_companions: int
+    age_group: AgeGroup
+    is_primary_guest: bool
     status: GuestStatus
     rsvp_status: RSVPStatus | None
     created_at: datetime
@@ -54,6 +60,7 @@ class AdminGuestCreateRequest(BaseModel):
         ge=0,
         le=20,
     )
+    age_group: AgeGroup = AgeGroup.ADULT
     is_primary_guest: bool = True
 
 
@@ -92,6 +99,7 @@ class AdminGuestUpdateRequest(BaseModel):
         ge=0,
         le=20,
     )
+    age_group: AgeGroup | None = None
     is_primary_guest: bool | None = None
     status: GuestStatus | None = None
 

@@ -3,6 +3,7 @@ from app.models.companion import Companion
 from app.models.enums import (
     AdminRole,
     AdminStatus,
+    AgeGroup,
     AttendanceType,
     GuestStatus,
     MealPreference,
@@ -16,6 +17,7 @@ __all__ = [
     "AdminRole",
     "AdminStatus",
     "Administrator",
+    "AgeGroup",
     "AttendanceType",
     "Companion",
     "Guest",

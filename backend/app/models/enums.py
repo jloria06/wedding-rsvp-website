@@ -1,6 +1,11 @@
 from enum import StrEnum
 
 
+class AgeGroup(StrEnum):
+    ADULT = "adult"
+    CHILD = "child"
+
+
 class GuestStatus(StrEnum):
     INVITED = "invited"
     VERIFIED = "verified"

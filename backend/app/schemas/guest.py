@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.models.enums import GuestStatus
+from app.models.enums import AgeGroup, GuestStatus
 
 
 class GuestVerificationRequest(BaseModel):
@@ -25,6 +25,7 @@ class GuestSummaryResponse(BaseModel):
     phone_number: str | None
     household_name: str | None
     maximum_companions: int
+    age_group: AgeGroup
     is_primary_guest: bool
     status: GuestStatus
     created_at: datetime

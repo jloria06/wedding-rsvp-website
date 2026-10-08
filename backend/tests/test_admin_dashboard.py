@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.database.base import Base
-from app.models import RSVP, Guest, GuestStatus, RSVPStatus
+from app.models import RSVP, AgeGroup, Guest, GuestStatus, RSVPStatus
 from app.services.admin_dashboard import AdminDashboardService
 
 
@@ -13,6 +13,7 @@ def build_guest(
     maximum_companions: int,
     rsvp_status: RSVPStatus | None = None,
     *,
+    age_group: AgeGroup = AgeGroup.ADULT,
     deleted: bool = False,
 ) -> Guest:
     guest = Guest(
@@ -20,6 +21,7 @@ def build_guest(
         first_name="Dashboard",
         last_name="Guest",
         maximum_companions=maximum_companions,
+        age_group=age_group,
         is_primary_guest=True,
         status=GuestStatus.INVITED,
         deleted_at=datetime.now(UTC) if deleted else None,
@@ -44,7 +46,7 @@ def test_dashboard_statistics_count_active_guests_and_rsvp_statuses() -> None:
                 build_guest("ATTENDING", 2, RSVPStatus.ATTENDING),
                 build_guest("DECLINED", 1, RSVPStatus.NOT_ATTENDING),
                 build_guest("PENDING-RSVP", 0, RSVPStatus.PENDING),
-                build_guest("NO-RSVP", 3),
+                build_guest("NO-RSVP", 3, age_group=AgeGroup.CHILD),
                 build_guest("DELETED", 8, RSVPStatus.ATTENDING, deleted=True),
             ]
         )
@@ -58,5 +60,5 @@ def test_dashboard_statistics_count_active_guests_and_rsvp_statuses() -> None:
     assert statistics.attending == 1
     assert statistics.declined == 1
     assert statistics.pending == 2
-    assert statistics.adults is None
-    assert statistics.children is None
+    assert statistics.adults == 3
+    assert statistics.children == 1

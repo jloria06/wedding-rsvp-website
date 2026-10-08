@@ -55,6 +55,7 @@ class AdminGuestManagementService:
                 request.household_name.strip() if request.household_name else None
             ),
             maximum_companions=request.maximum_companions,
+            age_group=request.age_group,
             is_primary_guest=request.is_primary_guest,
             status=GuestStatus.INVITED,
         )
@@ -107,6 +108,9 @@ class AdminGuestManagementService:
         if request.maximum_companions is not None:
             guest.maximum_companions = request.maximum_companions
 
+        if request.age_group is not None:
+            guest.age_group = request.age_group
+
         if request.is_primary_guest is not None:
             guest.is_primary_guest = request.is_primary_guest
 
@@ -148,9 +152,15 @@ class AdminGuestManagementService:
             id=guest.id,
             invitation_code=guest.invitation_code,
             full_name=guest.full_name,
+            first_name=guest.first_name,
+            middle_name=guest.middle_name,
+            last_name=guest.last_name,
             email=guest.email,
+            phone_number=guest.phone_number,
             household_name=guest.household_name,
             maximum_companions=guest.maximum_companions,
+            age_group=guest.age_group,
+            is_primary_guest=guest.is_primary_guest,
             status=guest.status,
             rsvp_status=(guest.rsvp.status if guest.rsvp is not None else None),
             created_at=guest.created_at,
