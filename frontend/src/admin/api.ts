@@ -13,6 +13,10 @@ import type {
   SeatingOverview,
   AdminReportSummary,
   AdminAuditLogListResponse,
+  AdminAccountCreate,
+  AdminAccountListResponse,
+  AdminAccountMutationResponse,
+  AdminAccountUpdate,
 } from "./types";
 import type { WeddingContent } from "../types/content";
 
@@ -248,4 +252,53 @@ export function getAdministratorAuditLogs(
   return apiRequest<AdminAuditLogListResponse>("/admin/audit-logs?limit=250", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+}
+
+export function listAdministratorAccounts(
+  accessToken: string,
+): Promise<AdminAccountListResponse> {
+  return apiRequest<AdminAccountListResponse>("/admin/administrators", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function createAdministratorAccount(
+  accessToken: string,
+  account: AdminAccountCreate,
+): Promise<AdminAccountMutationResponse> {
+  return apiRequest<AdminAccountMutationResponse>("/admin/administrators", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(account),
+  });
+}
+
+export function updateAdministratorAccount(
+  accessToken: string,
+  administratorId: number,
+  account: AdminAccountUpdate,
+): Promise<AdminAccountMutationResponse> {
+  return apiRequest<AdminAccountMutationResponse>(
+    `/admin/administrators/${administratorId}`,
+    {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(account),
+    },
+  );
+}
+
+export function resetAdministratorPassword(
+  accessToken: string,
+  administratorId: number,
+  temporaryPassword: string,
+): Promise<AdminAccountMutationResponse> {
+  return apiRequest<AdminAccountMutationResponse>(
+    `/admin/administrators/${administratorId}/reset-password`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ temporary_password: temporaryPassword }),
+    },
+  );
 }

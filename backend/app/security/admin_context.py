@@ -116,3 +116,20 @@ GuestManager = Annotated[
     Administrator,
     Depends(require_guest_manager),
 ]
+
+
+def require_super_administrator(
+    administrator: DashboardAdministrator,
+) -> Administrator:
+    if administrator.role != AdminRole.SUPER_ADMIN:
+        raise AuthorizationError(
+            "Only super administrators can manage administrator accounts.",
+        )
+
+    return administrator
+
+
+SuperAdministrator = Annotated[
+    Administrator,
+    Depends(require_super_administrator),
+]

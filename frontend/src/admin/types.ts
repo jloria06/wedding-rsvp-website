@@ -200,3 +200,50 @@ export type AdminAuditLogListResponse = {
   logs: AdminAuditLog[];
   total: number;
 };
+
+export type AdminAccountStatus = "active" | "disabled";
+
+export type AdminAccount = {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  role: AdminRole;
+  status: AdminAccountStatus;
+  is_password_change_required: boolean;
+  failed_login_attempts: number;
+  locked_until: string | null;
+  last_login_at: string | null;
+  created_at: string;
+};
+
+export type AdminAccountListResponse = {
+  success: boolean;
+  administrators: AdminAccount[];
+  total: number;
+};
+
+export type AdminAccountCreate = {
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: AdminRole;
+  temporary_password: string;
+};
+
+export type AdminAccountUpdate = {
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  role?: AdminRole;
+  status?: AdminAccountStatus;
+};
+
+export type AdminAccountMutationResponse = {
+  success: boolean;
+  message: string;
+  administrator: AdminAccount;
+};

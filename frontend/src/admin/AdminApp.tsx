@@ -27,6 +27,7 @@ import { ContentManagement } from "./ContentManagement";
 import { SeatingManagement } from "./SeatingManagement";
 import { ReportsManagement } from "./ReportsManagement";
 import { AuditLogsManagement } from "./AuditLogsManagement";
+import { AdministratorManagement } from "./AdministratorManagement";
 import type { AdminProfile, DashboardStatistics } from "./types";
 
 function friendlyRole(role: AdminProfile["role"]): string {
@@ -425,6 +426,14 @@ function AdminLayout({
           >
             Audit logs
           </a>
+          {profile.role === "super_admin" ? (
+            <a
+              className={location.pathname.startsWith("/admin/administrators") ? "is-active" : ""}
+              href="/admin/administrators"
+            >
+              Administrators
+            </a>
+          ) : null}
         </nav>
         <button className="admin-signout" type="button" onClick={onSignOut}>
           Sign out
@@ -455,6 +464,15 @@ function AdminLayout({
           <ReportsManagement accessToken={accessToken} />
         ) : location.pathname.startsWith("/admin/audit-logs") ? (
           <AuditLogsManagement accessToken={accessToken} />
+        ) : location.pathname.startsWith("/admin/administrators") ? (
+          profile.role === "super_admin" ? (
+            <AdministratorManagement
+              accessToken={accessToken}
+              currentAdministratorId={profile.administrator_id}
+            />
+          ) : (
+            <p className="admin-error" role="alert">Only Super Admins can manage administrator accounts.</p>
+          )
         ) : location.pathname.startsWith("/admin/gallery") ? (
           <ContentManagement accessToken={accessToken} role={profile.role} initialSection="gallery" />
         ) : (
