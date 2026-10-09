@@ -33,7 +33,7 @@ class RSVPSubmissionRequest(BaseModel):
         default=None,
         max_length=2000,
     )
-    companions: list[CompanionInput] = Field(default_factory=list)
+    companions: list[CompanionInput] | None = None
 
     @model_validator(mode="after")
     def validate_attendance_details(self) -> RSVPSubmissionRequest:

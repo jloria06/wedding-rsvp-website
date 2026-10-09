@@ -48,10 +48,10 @@ export type RSVPSubmissionRequest = {
   invitation_code: string;
   status: RSVPStatus;
   attendance_type: AttendanceType | null;
-  meal_preference: MealPreference | null;
+  meal_preference?: MealPreference | null;
   dietary_restrictions: string | null;
   guest_message: string | null;
-  companions: CompanionInput[];
+  companions?: CompanionInput[];
 };
 
 export type CompanionResponse = CompanionInput & {

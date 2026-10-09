@@ -42,7 +42,9 @@ class RSVPSubmissionService:
                 "This invitation is not permitted to submit an RSVP.",
             )
 
-        companion_count = len(request.companions)
+        companions_were_supplied = request.companions is not None
+        companion_inputs = request.companions or []
+        companion_count = len(companion_inputs)
 
         if companion_count > guest.maximum_companions:
             raise AuthorizationError(
@@ -69,12 +71,14 @@ class RSVPSubmissionService:
         else:
             rsvp = existing_rsvp
 
-            self.rsvp_repository.delete_companions(rsvp)
+            if companions_were_supplied:
+                self.rsvp_repository.delete_companions(rsvp)
+                rsvp.companion_count = companion_count
 
             rsvp.status = request.status
             rsvp.attendance_type = request.attendance_type
-            rsvp.companion_count = companion_count
-            rsvp.meal_preference = request.meal_preference
+            if "meal_preference" in request.model_fields_set:
+                rsvp.meal_preference = request.meal_preference
             rsvp.dietary_restrictions = request.dietary_restrictions
             rsvp.guest_message = request.guest_message
             rsvp.responded_at = datetime.now(UTC)
@@ -82,20 +86,23 @@ class RSVPSubmissionService:
             message = "RSVP updated successfully."
 
         if request.status == RSVPStatus.ATTENDING:
-            for companion_input in request.companions:
-                rsvp.companions.append(
-                    Companion(
-                        first_name=companion_input.first_name.strip(),
-                        middle_name=(
-                            companion_input.middle_name.strip()
-                            if companion_input.middle_name
-                            else None
-                        ),
-                        last_name=companion_input.last_name.strip(),
-                        meal_preference=(companion_input.meal_preference),
-                        dietary_restrictions=(companion_input.dietary_restrictions),
+            if existing_rsvp is None or companions_were_supplied:
+                for companion_input in companion_inputs:
+                    rsvp.companions.append(
+                        Companion(
+                            first_name=companion_input.first_name.strip(),
+                            middle_name=(
+                                companion_input.middle_name.strip()
+                                if companion_input.middle_name
+                                else None
+                            ),
+                            last_name=companion_input.last_name.strip(),
+                            meal_preference=(companion_input.meal_preference),
+                            dietary_restrictions=(
+                                companion_input.dietary_restrictions
+                            ),
+                        )
                     )
-                )
 
         else:
             rsvp.attendance_type = None

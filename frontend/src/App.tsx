@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import * as XLSX from "xlsx";
 
 import { InvitationVerificationForm } from "./components/InvitationVerificationForm";
 import { RSVPForm } from "./components/RSVPForm";
@@ -421,6 +420,7 @@ function App() {
         }
 
         const buffer = await response.arrayBuffer();
+        const XLSX = await import("xlsx");
         const workbook = XLSX.read(buffer, { type: "array" });
         const sheet =
           workbook.Sheets.Entourage ?? workbook.Sheets[workbook.SheetNames[0]];
