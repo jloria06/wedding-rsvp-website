@@ -180,3 +180,23 @@ export type AdminReportSummary = {
   meal_breakdown: ReportBreakdownItem[];
   age_breakdown: ReportBreakdownItem[];
 };
+
+export type AdminAuditLog = {
+  id: number;
+  administrator_id: number | null;
+  administrator_name: string;
+  administrator_username: string;
+  administrator_role: AdminRole;
+  action: string;
+  resource_type: string;
+  resource_id: string | null;
+  summary: string;
+  details: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type AdminAuditLogListResponse = {
+  success: boolean;
+  logs: AdminAuditLog[];
+  total: number;
+};

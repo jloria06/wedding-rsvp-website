@@ -12,6 +12,7 @@ import type {
   SeatingMutationResponse,
   SeatingOverview,
   AdminReportSummary,
+  AdminAuditLogListResponse,
 } from "./types";
 import type { WeddingContent } from "../types/content";
 
@@ -237,6 +238,14 @@ export function getAdministratorReports(accessToken: string): Promise<AdminRepor
 
 export function exportAdministratorReport(accessToken: string): Promise<Blob> {
   return apiDownload("/admin/reports/export.csv", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function getAdministratorAuditLogs(
+  accessToken: string,
+): Promise<AdminAuditLogListResponse> {
+  return apiRequest<AdminAuditLogListResponse>("/admin/audit-logs?limit=250", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 }

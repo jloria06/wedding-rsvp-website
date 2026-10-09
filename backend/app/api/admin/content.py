@@ -7,6 +7,7 @@ from app.database.session import get_database_session
 from app.schemas.media_asset import MediaUploadResponse
 from app.schemas.wedding_content import WeddingContentPayload, WeddingContentResponse
 from app.security import DashboardAdministrator, GuestManager
+from app.services.admin_audit import AdminAuditService
 from app.services.media_asset import MAX_IMAGE_BYTES, MediaAssetService
 from app.services.wedding_content import WeddingContentService
 
@@ -31,6 +32,13 @@ def update_content(
     response = WeddingContentService(database_session).update_content(
         content, current_administrator.id
     )
+    AdminAuditService(database_session).record(
+        current_administrator,
+        action="content.updated",
+        resource_type="wedding_content",
+        resource_id=WeddingContentService.CONTENT_ID,
+        summary="Updated the public wedding website content.",
+    )
     database_session.commit()
     return response
 
@@ -47,6 +55,17 @@ async def upload_content_image(
         content_type=image.content_type or "application/octet-stream",
         data=data,
         administrator_id=current_administrator.id,
+    )
+    AdminAuditService(database_session).record(
+        current_administrator,
+        action="media.uploaded",
+        resource_type="media_asset",
+        resource_id=response.id,
+        summary=f"Uploaded image {response.filename}.",
+        details={
+            "content_type": response.content_type,
+            "size_bytes": response.size_bytes,
+        },
     )
     database_session.commit()
     return response

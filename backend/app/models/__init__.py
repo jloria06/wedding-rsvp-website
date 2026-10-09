@@ -1,4 +1,5 @@
 from app.models.administrator import Administrator
+from app.models.audit_log import AuditLog
 from app.models.companion import Companion
 from app.models.enums import (
     AdminRole,
@@ -20,6 +21,7 @@ __all__ = [
     "AdminRole",
     "AdminStatus",
     "Administrator",
+    "AuditLog",
     "AgeGroup",
     "AttendanceType",
     "Companion",

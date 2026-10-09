@@ -10,6 +10,7 @@ from app.schemas.admin_rsvp import (
     AdminRSVPUpsertRequest,
 )
 from app.security import DashboardAdministrator, GuestManager
+from app.services.admin_audit import AdminAuditService
 from app.services.admin_rsvp_management import AdminRSVPManagementService
 
 router = APIRouter(prefix="/rsvps", tags=["Admin RSVPs"])
@@ -50,6 +51,18 @@ def upsert_rsvp(
 ) -> AdminRSVPMutationResponse:
     response = AdminRSVPManagementService(database_session).upsert_rsvp(
         guest_id, request
+    )
+    AdminAuditService(database_session).record(
+        current_administrator,
+        action="rsvp.saved",
+        resource_type="rsvp",
+        resource_id=response.rsvp.rsvp_id,
+        summary=f"Saved RSVP for {response.rsvp.guest_name}.",
+        details={
+            "guest_id": guest_id,
+            "status": response.rsvp.status.value,
+            "companion_count": response.rsvp.companion_count,
+        },
     )
     database_session.commit()
     return response

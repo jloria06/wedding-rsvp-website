@@ -14,6 +14,7 @@ from app.schemas import (
 )
 from app.security import CurrentAdministrator
 from app.services import AdministratorAuthenticationService
+from app.services.admin_audit import AdminAuditService
 
 router = APIRouter(
     prefix="/auth",
@@ -65,6 +66,14 @@ def change_administrator_password(
     response = service.change_password(
         current_administrator,
         request,
+    )
+
+    AdminAuditService(database_session).record(
+        current_administrator,
+        action="administrator.password_changed",
+        resource_type="administrator",
+        resource_id=current_administrator.id,
+        summary="Changed administrator account password.",
     )
 
     database_session.commit()

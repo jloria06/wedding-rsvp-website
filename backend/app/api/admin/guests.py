@@ -14,6 +14,7 @@ from app.schemas import (
 )
 from app.security import DashboardAdministrator, GuestManager
 from app.services import AdminGuestManagementService
+from app.services.admin_audit import AdminAuditService
 
 router = APIRouter(
     prefix="/guests",
@@ -56,6 +57,15 @@ def create_guest(
 
     response = service.create_guest(request)
 
+    AdminAuditService(database_session).record(
+        current_administrator,
+        action="guest.created",
+        resource_type="guest",
+        resource_id=response.guest.id,
+        summary=f"Created guest {response.guest.full_name}.",
+        details={"invitation_code": response.guest.invitation_code},
+    )
+
     database_session.commit()
 
     return response
@@ -80,6 +90,15 @@ def update_guest(
         request,
     )
 
+    AdminAuditService(database_session).record(
+        current_administrator,
+        action="guest.updated",
+        resource_type="guest",
+        resource_id=response.guest.id,
+        summary=f"Updated guest {response.guest.full_name}.",
+        details={"changed_fields": sorted(request.model_fields_set)},
+    )
+
     database_session.commit()
 
     return response
@@ -99,6 +118,14 @@ def delete_guest(
     service = AdminGuestManagementService(database_session)
 
     response = service.soft_delete_guest(guest_id)
+
+    AdminAuditService(database_session).record(
+        current_administrator,
+        action="guest.deactivated",
+        resource_type="guest",
+        resource_id=response.guest_id,
+        summary=f"Deactivated guest record #{response.guest_id}.",
+    )
 
     database_session.commit()
 
