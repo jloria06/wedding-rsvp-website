@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { InvitationVerificationForm } from "./components/InvitationVerificationForm";
 import { RSVPForm } from "./components/RSVPForm";
 import { apiAssetUrl, apiRequest } from "./lib/api";
+import { verifyInvitationCode } from "./services/rsvp";
 import {
   defaultWeddingContent,
   type WeddingContent,
@@ -260,9 +261,52 @@ function App() {
   ------------------------------------------------------- */
 
   const [verifiedGuest, setVerifiedGuest] = useState<GuestSummary | null>(null);
+  const invitationLinkProcessed = useRef(false);
   const [hasExistingRSVP, setHasExistingRSVP] = useState(false);
   const [rsvpResponse, setRSVPResponse] =
     useState<RSVPSubmissionResponse | null>(null);
+
+  useEffect(() => {
+    if (invitationLinkProcessed.current) {
+      return;
+    }
+
+    const invitationCode = new URLSearchParams(window.location.search)
+      .get("invite")
+      ?.trim();
+
+    if (!invitationCode) {
+      return;
+    }
+
+    invitationLinkProcessed.current = true;
+    setInvitationOpened(true);
+
+    void verifyInvitationCode(invitationCode)
+      .then((response) => {
+        setVerifiedGuest(response.guest);
+        setHasExistingRSVP(response.has_existing_rsvp);
+      })
+      .catch(() => {
+        setVerifiedGuest(null);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (
+      !siteReady ||
+      !invitationOpened ||
+      !new URLSearchParams(window.location.search).has("invite")
+    ) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("rsvp")?.scrollIntoView({ behavior: "smooth" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [invitationOpened, siteReady]);
 
   /* =======================================================
      INITIAL LOADING SCREEN

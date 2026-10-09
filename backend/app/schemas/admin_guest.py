@@ -20,6 +20,7 @@ class AdminGuestListItem(BaseModel):
     is_primary_guest: bool
     status: GuestStatus
     rsvp_status: RSVPStatus | None
+    invitation_sent_at: datetime | None
     created_at: datetime
 
 

@@ -111,6 +111,19 @@ export function deactivateAdministratorGuest(
   });
 }
 
+export function markAdministratorInvitationSent(
+  accessToken: string,
+  guestId: number,
+): Promise<GuestMutationResponse> {
+  return apiRequest<GuestMutationResponse>(
+    `/admin/guests/${guestId}/mark-invitation-sent`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
+}
+
 type RSVPListResponse = { success: boolean; rsvps: AdminRSVP[]; total: number };
 type RSVPMutationResponse = { success: boolean; message: string; rsvp: AdminRSVP };
 

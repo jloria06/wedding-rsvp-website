@@ -104,6 +104,33 @@ def update_guest(
     return response
 
 
+@router.post(
+    "/{guest_id}/mark-invitation-sent",
+    response_model=AdminGuestUpdateResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Mark a guest invitation as sent",
+)
+def mark_invitation_sent(
+    guest_id: int,
+    current_administrator: GuestManager,
+    database_session: DatabaseSession,
+) -> AdminGuestUpdateResponse:
+    service = AdminGuestManagementService(database_session)
+    response = service.mark_invitation_sent(guest_id)
+
+    AdminAuditService(database_session).record(
+        current_administrator,
+        action="guest.invitation_sent",
+        resource_type="guest",
+        resource_id=response.guest.id,
+        summary=f"Marked invitation for {response.guest.full_name} as sent.",
+    )
+
+    database_session.commit()
+
+    return response
+
+
 @router.delete(
     "/{guest_id}",
     response_model=AdminGuestDeleteResponse,

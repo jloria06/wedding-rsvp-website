@@ -144,6 +144,25 @@ class AdminGuestManagementService:
             guest_id=guest.id,
         )
 
+    def mark_invitation_sent(
+        self,
+        guest_id: int,
+    ) -> AdminGuestUpdateResponse:
+        guest = self.guest_repository.get_by_id(guest_id)
+
+        if guest is None:
+            raise AuthorizationError(
+                "Guest not found.",
+            )
+
+        guest.invitation_sent_at = datetime.now(UTC)
+        self.database_session.flush()
+
+        return AdminGuestUpdateResponse(
+            message="Invitation marked as sent.",
+            guest=self._build_guest_item(guest),
+        )
+
     @staticmethod
     def _build_guest_item(
         guest: Guest,
@@ -163,5 +182,6 @@ class AdminGuestManagementService:
             is_primary_guest=guest.is_primary_guest,
             status=guest.status,
             rsvp_status=(guest.rsvp.status if guest.rsvp is not None else None),
+            invitation_sent_at=guest.invitation_sent_at,
             created_at=guest.created_at,
         )

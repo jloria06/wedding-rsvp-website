@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Enum, Index, String
+from sqlalchemy import Boolean, DateTime, Enum, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
@@ -100,6 +101,12 @@ class Guest(Base, TimestampMixin, SoftDeleteMixin):
     notes: Mapped[str | None] = mapped_column(
         String(500),
         nullable=True,
+    )
+
+    invitation_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
     )
 
     rsvp: Mapped[RSVP | None] = relationship(

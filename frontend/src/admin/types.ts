@@ -96,6 +96,7 @@ export type AdminGuest = {
   is_primary_guest: boolean;
   status: GuestStatus;
   rsvp_status: RSVPStatus | null;
+  invitation_sent_at: string | null;
   created_at: string;
 };
 

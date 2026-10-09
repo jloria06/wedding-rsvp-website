@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { QRCodeSVG } from "qrcode.react";
 
 import { ApiError } from "../lib/api";
 import {
   createAdministratorGuest,
   deactivateAdministratorGuest,
   listAdministratorGuests,
+  markAdministratorInvitationSent,
   updateAdministratorGuest,
 } from "./api";
 import type {
@@ -51,6 +53,13 @@ function rsvpLabel(status: RSVPStatus | null): string {
   return "Pending";
 }
 
+function invitationUrl(invitationCode: string): string {
+  const url = new URL(window.location.origin);
+  url.searchParams.set("invite", invitationCode);
+  url.hash = "rsvp";
+  return url.toString();
+}
+
 export function GuestManagement({
   accessToken,
   role,
@@ -64,11 +73,15 @@ export function GuestManagement({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<GuestStatus | "all">("all");
   const [rsvpFilter, setRsvpFilter] = useState<RSVPStatus | "pending" | "all">("all");
+  const [deliveryFilter, setDeliveryFilter] = useState<"all" | "sent" | "not_sent">("all");
   const [editingGuest, setEditingGuest] = useState<AdminGuest | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [draft, setDraft] = useState<GuestDraft>(emptyDraft);
   const [isSaving, setIsSaving] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [invitationGuest, setInvitationGuest] = useState<AdminGuest | null>(null);
+  const [invitationFeedback, setInvitationFeedback] = useState("");
+  const [isMarkingSent, setIsMarkingSent] = useState(false);
   const canManage = role !== "viewer";
 
   useEffect(() => {
@@ -96,9 +109,12 @@ export function GuestManagement({
       const matchesStatus = statusFilter === "all" || guest.status === statusFilter;
       const normalizedRsvp = guest.rsvp_status ?? "pending";
       const matchesRsvp = rsvpFilter === "all" || normalizedRsvp === rsvpFilter;
-      return matchesSearch && matchesStatus && matchesRsvp;
+      const matchesDelivery = deliveryFilter === "all"
+        || (deliveryFilter === "sent" && Boolean(guest.invitation_sent_at))
+        || (deliveryFilter === "not_sent" && !guest.invitation_sent_at);
+      return matchesSearch && matchesStatus && matchesRsvp && matchesDelivery;
     });
-  }, [guests, rsvpFilter, search, statusFilter]);
+  }, [deliveryFilter, guests, rsvpFilter, search, statusFilter]);
 
   function openCreate(): void {
     setEditingGuest(null);
@@ -171,12 +187,57 @@ export function GuestManagement({
     }
   }
 
+  function openInvitation(guest: AdminGuest): void {
+    setInvitationGuest(guest);
+    setInvitationFeedback("");
+  }
+
+  async function copyInvitationLink(): Promise<void> {
+    if (!invitationGuest) return;
+
+    try {
+      await navigator.clipboard.writeText(
+        invitationUrl(invitationGuest.invitation_code),
+      );
+      setInvitationFeedback("Invitation link copied.");
+    } catch {
+      setInvitationFeedback("Copy failed. Select and copy the link below.");
+    }
+  }
+
+  async function markInvitationSent(): Promise<void> {
+    if (!invitationGuest || !canManage) return;
+
+    setIsMarkingSent(true);
+    setInvitationFeedback("");
+
+    try {
+      const response = await markAdministratorInvitationSent(
+        accessToken,
+        invitationGuest.id,
+      );
+      setInvitationGuest(response.guest);
+      setGuests((current) =>
+        current.map((guest) =>
+          guest.id === response.guest.id ? response.guest : guest,
+        ),
+      );
+      setInvitationFeedback("Invitation marked as sent.");
+    } catch (error) {
+      setInvitationFeedback(
+        error instanceof ApiError ? error.message : "Status could not be updated.",
+      );
+    } finally {
+      setIsMarkingSent(false);
+    }
+  }
+
   const editorOpen = isCreating || editingGuest !== null;
 
   return (
     <section className="admin-guests" aria-labelledby="guest-management-title">
       <div className="admin-section-heading">
-        <div><p className="admin-status-label">Phase 3</p><h2 id="guest-management-title">Guest management</h2><p>{guests.length} active invitation records</p></div>
+        <div><p className="admin-status-label">Phase 9</p><h2 id="guest-management-title">Guest management</h2><p>{guests.length} active invitation records</p></div>
         {canManage ? <button type="button" onClick={openCreate}>Add guest</button> : null}
       </div>
 
@@ -184,14 +245,83 @@ export function GuestManagement({
         <input aria-label="Search guests" placeholder="Search name, code, email, or household" value={search} onChange={(e) => setSearch(e.target.value)} />
         <select aria-label="Filter guest status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as GuestStatus | "all")}><option value="all">All guest statuses</option><option value="invited">Invited</option><option value="verified">Verified</option><option value="blocked">Blocked</option></select>
         <select aria-label="Filter RSVP status" value={rsvpFilter} onChange={(e) => setRsvpFilter(e.target.value as RSVPStatus | "pending" | "all")}><option value="all">All RSVP statuses</option><option value="pending">Pending</option><option value="attending">Attending</option><option value="not_attending">Declined</option></select>
+        <select aria-label="Filter invitation delivery" value={deliveryFilter} onChange={(e) => setDeliveryFilter(e.target.value as "all" | "sent" | "not_sent")}><option value="all">All delivery statuses</option><option value="sent">Sent</option><option value="not_sent">Not sent</option></select>
       </div>
 
       {errorMessage ? <p className="admin-error" role="alert">{errorMessage}</p> : null}
-      {isLoading ? <p className="admin-table-message">Loading guests...</p> : (
-        <div className="admin-table-wrap"><table className="admin-guest-table"><thead><tr><th>Guest</th><th>Invitation</th><th>Seats</th><th>Age</th><th>Guest status</th><th>RSVP</th>{canManage ? <th>Actions</th> : null}</tr></thead><tbody>
-          {filteredGuests.map((guest) => <tr key={guest.id}><td><strong>{guest.full_name}</strong><small>{guest.household_name || guest.email || "No contact details"}</small></td><td><code>{guest.invitation_code}</code></td><td>{guest.maximum_companions + 1}</td><td className="admin-capitalize">{guest.age_group}</td><td className="admin-capitalize">{guest.status}</td><td>{rsvpLabel(guest.rsvp_status)}</td>{canManage ? <td><div className="admin-row-actions"><button type="button" onClick={() => openEdit(guest)}>Edit</button><button className="is-danger" type="button" onClick={() => void deactivate(guest)}>Deactivate</button></div></td> : null}</tr>)}
-          {filteredGuests.length === 0 ? <tr><td colSpan={canManage ? 7 : 6} className="admin-table-message">No guests match these filters.</td></tr> : null}
-        </tbody></table></div>
+      {isLoading ? (
+        <p className="admin-table-message">Loading guests...</p>
+      ) : (
+        <div className="admin-table-wrap">
+          <table className="admin-guest-table">
+            <thead>
+              <tr>
+                <th>Guest</th>
+                <th>Invitation</th>
+                <th>Delivery</th>
+                <th>Seats</th>
+                <th>Age</th>
+                <th>Guest status</th>
+                <th>RSVP</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredGuests.map((guest) => (
+                <tr key={guest.id}>
+                  <td>
+                    <strong>{guest.full_name}</strong>
+                    <small>
+                      {guest.household_name || guest.email || "No contact details"}
+                    </small>
+                  </td>
+                  <td><code>{guest.invitation_code}</code></td>
+                  <td>
+                    {guest.invitation_sent_at ? (
+                      <span className="admin-delivery-status is-sent">
+                        Sent {new Date(guest.invitation_sent_at).toLocaleDateString()}
+                      </span>
+                    ) : (
+                      <span className="admin-delivery-status">Not sent</span>
+                    )}
+                  </td>
+                  <td>{guest.maximum_companions + 1}</td>
+                  <td className="admin-capitalize">{guest.age_group}</td>
+                  <td className="admin-capitalize">{guest.status}</td>
+                  <td>{rsvpLabel(guest.rsvp_status)}</td>
+                  <td>
+                    <div className="admin-row-actions">
+                      <button type="button" onClick={() => openInvitation(guest)}>
+                        Invitation
+                      </button>
+                      {canManage ? (
+                        <>
+                          <button type="button" onClick={() => openEdit(guest)}>
+                            Edit
+                          </button>
+                          <button
+                            className="is-danger"
+                            type="button"
+                            onClick={() => void deactivate(guest)}
+                          >
+                            Deactivate
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredGuests.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="admin-table-message">
+                    No guests match these filters.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {editorOpen ? <div className="admin-editor-backdrop"><section className="admin-guest-editor" aria-labelledby="guest-editor-title"><div className="admin-editor-header"><div><p className="admin-status-label">{editingGuest ? "Edit invitation" : "New invitation"}</p><h2 id="guest-editor-title">{editingGuest ? editingGuest.full_name : "Add guest"}</h2></div><button type="button" onClick={closeEditor}>Close</button></div><form onSubmit={saveGuest}>
@@ -200,6 +330,73 @@ export function GuestManagement({
         <label className="admin-checkbox"><input type="checkbox" checked={draft.is_primary_guest} onChange={(e) => setDraft({...draft, is_primary_guest:e.target.checked})} />Primary guest</label>
         <div className="admin-editor-actions"><button type="button" onClick={closeEditor}>Cancel</button><button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save guest"}</button></div>
       </form></section></div> : null}
+
+      {invitationGuest ? (
+        <div className="admin-editor-backdrop">
+          <section
+            className="admin-guest-editor admin-invitation-card"
+            aria-labelledby="invitation-card-title"
+          >
+            <div className="admin-editor-header">
+              <div>
+                <p className="admin-status-label">Guest invitation</p>
+                <h2 id="invitation-card-title">{invitationGuest.full_name}</h2>
+              </div>
+              <button type="button" onClick={() => setInvitationGuest(null)}>
+                Close
+              </button>
+            </div>
+
+            <div className="admin-invitation-layout">
+              <div className="admin-invitation-qr">
+                <QRCodeSVG
+                  value={invitationUrl(invitationGuest.invitation_code)}
+                  size={220}
+                  level="M"
+                  marginSize={2}
+                  title={`Invitation for ${invitationGuest.full_name}`}
+                />
+              </div>
+              <div className="admin-invitation-details">
+                <span>Invitation code</span>
+                <strong>{invitationGuest.invitation_code}</strong>
+                <label htmlFor="guest-invitation-link">Personal invitation link</label>
+                <textarea
+                  id="guest-invitation-link"
+                  readOnly
+                  rows={4}
+                  value={invitationUrl(invitationGuest.invitation_code)}
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+                <p>
+                  {invitationGuest.invitation_sent_at
+                    ? `Marked sent ${new Date(invitationGuest.invitation_sent_at).toLocaleString()}`
+                    : "This invitation has not been marked as sent."}
+                </p>
+              </div>
+            </div>
+
+            {invitationFeedback ? (
+              <p className="admin-success" role="status">{invitationFeedback}</p>
+            ) : null}
+
+            <div className="admin-editor-actions">
+              <button type="button" onClick={() => void copyInvitationLink()}>
+                Copy link
+              </button>
+              {canManage ? (
+                <button
+                  type="button"
+                  onClick={() => void markInvitationSent()}
+                  disabled={isMarkingSent}
+                >
+                  {isMarkingSent ? "Saving..." : "Mark as sent"}
+                </button>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </section>
   );
 }

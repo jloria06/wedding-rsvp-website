@@ -41,4 +41,7 @@ def test_guest_management_preserves_age_group_and_editable_details() -> None:
 
         assert updated.guest.age_group == AgeGroup.ADULT
         assert updated.guest.status == GuestStatus.BLOCKED
+
+        sent = service.mark_invitation_sent(created.guest.id)
+        assert sent.guest.invitation_sent_at is not None
         assert service.list_guests().total == 1
