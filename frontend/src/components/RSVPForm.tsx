@@ -21,8 +21,6 @@ export function RSVPForm({ guest, onSubmitted }: RSVPFormProps) {
     "ceremony_and_reception",
   );
 
-  const [dietaryRestrictions, setDietaryRestrictions] = useState("");
-
   const [guestMessage, setGuestMessage] = useState("");
 
   const [errorMessage, setErrorMessage] = useState("");
@@ -47,10 +45,6 @@ export function RSVPForm({ guest, onSubmitted }: RSVPFormProps) {
         invitation_code: guest.invitation_code,
         status,
         attendance_type: status === "attending" ? attendanceType : null,
-        dietary_restrictions:
-          status === "attending" && dietaryRestrictions.trim()
-            ? dietaryRestrictions.trim()
-            : null,
         guest_message: guestMessage.trim() ? guestMessage.trim() : null,
       });
 
@@ -117,17 +111,6 @@ export function RSVPForm({ guest, onSubmitted }: RSVPFormProps) {
               <option value="ceremony_only">Ceremony only</option>
               <option value="reception_only">Reception only</option>
             </select>
-
-            <label htmlFor="dietary-restrictions">Dietary restrictions</label>
-
-            <textarea
-              id="dietary-restrictions"
-              value={dietaryRestrictions}
-              onChange={(event) => setDietaryRestrictions(event.target.value)}
-              maxLength={500}
-              disabled={isSubmitting}
-            />
-
           </>
         ) : null}
 

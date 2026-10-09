@@ -49,7 +49,7 @@ export type RSVPSubmissionRequest = {
   status: RSVPStatus;
   attendance_type: AttendanceType | null;
   meal_preference?: MealPreference | null;
-  dietary_restrictions: string | null;
+  dietary_restrictions?: string | null;
   guest_message: string | null;
   companions?: CompanionInput[];
 };

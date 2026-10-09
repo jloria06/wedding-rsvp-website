@@ -79,7 +79,8 @@ class RSVPSubmissionService:
             rsvp.attendance_type = request.attendance_type
             if "meal_preference" in request.model_fields_set:
                 rsvp.meal_preference = request.meal_preference
-            rsvp.dietary_restrictions = request.dietary_restrictions
+            if "dietary_restrictions" in request.model_fields_set:
+                rsvp.dietary_restrictions = request.dietary_restrictions
             rsvp.guest_message = request.guest_message
             rsvp.responded_at = datetime.now(UTC)
 

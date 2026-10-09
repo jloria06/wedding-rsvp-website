@@ -29,6 +29,7 @@ def test_simplified_update_preserves_existing_meal_and_companions() -> None:
                 status="attending",
                 attendance_type="ceremony_and_reception",
                 meal_preference="standard",
+                dietary_restrictions="Existing allergy",
                 companions=[
                     {
                         "first_name": "Existing",
@@ -44,12 +45,12 @@ def test_simplified_update_preserves_existing_meal_and_companions() -> None:
                 invitation_code=guest.invitation_code,
                 status="attending",
                 attendance_type="ceremony_only",
-                dietary_restrictions="Nut allergy",
-                guest_message="Updated without meal or plus-one fields.",
+                guest_message="Updated without meal, dietary, or plus-one fields.",
             )
         )
 
         assert updated.rsvp.meal_preference.value == "standard"
+        assert updated.rsvp.dietary_restrictions == "Existing allergy"
         assert updated.rsvp.companion_count == 1
         assert len(updated.rsvp.companions) == 1
         assert updated.rsvp.companions[0].first_name == "Existing"
