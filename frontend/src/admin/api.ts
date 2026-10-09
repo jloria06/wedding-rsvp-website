@@ -11,6 +11,7 @@ import type {
   RSVPInput,
   SeatingMutationResponse,
   SeatingOverview,
+  AdminReportSummary,
 } from "./types";
 import type { WeddingContent } from "../types/content";
 
@@ -224,6 +225,18 @@ export function unassignAdministratorParty(
 ): Promise<SeatingMutationResponse> {
   return apiRequest<SeatingMutationResponse>(`/admin/seating/assignments/${guestId}`, {
     method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function getAdministratorReports(accessToken: string): Promise<AdminReportSummary> {
+  return apiRequest<AdminReportSummary>("/admin/reports", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function exportAdministratorReport(accessToken: string): Promise<Blob> {
+  return apiDownload("/admin/reports/export.csv", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 }

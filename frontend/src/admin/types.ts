@@ -154,3 +154,29 @@ export type SeatingMutationResponse = {
   message: string;
   seating: SeatingOverview;
 };
+
+export type ReportBreakdownItem = {
+  label: string;
+  value: number;
+};
+
+export type AdminReportSummary = {
+  success: boolean;
+  total_invitations: number;
+  responded_invitations: number;
+  pending_invitations: number;
+  attending_invitations: number;
+  declined_invitations: number;
+  attending_people: number;
+  companions_attending: number;
+  ceremony_people: number;
+  reception_people: number;
+  dietary_requests: number;
+  response_rate: number;
+  assigned_reception_people: number;
+  unassigned_reception_people: number;
+  seating_completion_rate: number;
+  attendance_breakdown: ReportBreakdownItem[];
+  meal_breakdown: ReportBreakdownItem[];
+  age_breakdown: ReportBreakdownItem[];
+};
