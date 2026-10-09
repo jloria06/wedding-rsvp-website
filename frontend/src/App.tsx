@@ -157,14 +157,6 @@ function App() {
      GLOBAL WEDDING CONFIGURATION
   ------------------------------------------------------- */
 
-  const galleryImages = [
-    "/images/gallery-1.jpg",
-    "/images/gallery-2.jpg",
-    "/images/gallery-3.jpg",
-    "/images/gallery-4.jpg",
-    "/images/gallery-5.jpg",
-  ];
-
   /*
      CINEMATIC OPENING HERO
 
@@ -217,6 +209,8 @@ function App() {
   );
   const heroSlides = weddingConfig.heroImages.map(apiAssetUrl);
   const scrollDividerImages = weddingConfig.dividerImages.map(apiAssetUrl);
+  const galleryItems = weddingConfig.galleryItems.filter((item) => item.visible);
+  const galleryImages = galleryItems.map((item) => apiAssetUrl(item.image));
   const weddingDate = useMemo(
     () => new Date(weddingConfig.weddingDateIso),
     [weddingConfig.weddingDateIso],
@@ -335,6 +329,7 @@ function App() {
           portraitImage: incoming.portraitImage || DEFAULT_WEDDING_CONFIG.portraitImage,
           heroImages: incoming.heroImages?.length ? incoming.heroImages : DEFAULT_WEDDING_CONFIG.heroImages,
           dividerImages: incoming.dividerImages && incoming.dividerImages.length >= 3 ? [...incoming.dividerImages, "", ""].slice(0, 5) : DEFAULT_WEDDING_CONFIG.dividerImages,
+          galleryItems: incoming.galleryItems ?? DEFAULT_WEDDING_CONFIG.galleryItems,
           rsvpDeadline:
             incoming.rsvpDeadline ?? DEFAULT_WEDDING_CONFIG.rsvpDeadline,
           rsvpDeadlineDisplay:
@@ -943,11 +938,11 @@ function App() {
               >
                 <img
                   src={galleryImages[lightboxIndex]}
-                  alt={`John Paul and Joyce wedding moment ${lightboxIndex + 1}`}
+                  alt={galleryItems[lightboxIndex]?.alt || `John Paul and Joyce wedding moment ${lightboxIndex + 1}`}
                 />
 
                 <p>
-                  {lightboxIndex + 1} / {galleryImages.length}
+                  {galleryItems[lightboxIndex]?.caption ? `${galleryItems[lightboxIndex].caption} · ` : ""}{lightboxIndex + 1} / {galleryImages.length}
                 </p>
               </div>
 
@@ -1117,7 +1112,7 @@ function App() {
                     className={`welcome-hero__slide${
                       index === heroSlideIndex ? " is-active" : ""
                     }`}
-                    key={image}
+                    key={`${image}-${index}`}
                     style={{
                       backgroundImage: `url("${image}")`,
                     }}
@@ -1239,7 +1234,7 @@ function App() {
                     >
                       <img
                         src={image}
-                        alt={`John Paul and Joyce wedding moment ${index + 1}`}
+                        alt={galleryItems[index]?.alt || `John Paul and Joyce wedding moment ${index + 1}`}
                       />
 
                       <span className="welcome-section__photo-overlay">

@@ -21,6 +21,13 @@ class StoryItemContent(ContentModel):
     images: list[str] = Field(default_factory=list)
 
 
+class GalleryItemContent(ContentModel):
+    image: str = Field(min_length=1, max_length=500)
+    caption: str = Field(default="", max_length=300)
+    alt: str = Field(default="John Paul and Joyce wedding moment", max_length=300)
+    visible: bool = True
+
+
 class EntouragePersonContent(ContentModel):
     role: str = Field(default="", max_length=150)
     name: str = Field(min_length=1, max_length=200)
@@ -78,6 +85,13 @@ class WeddingContentPayload(ContentModel):
         min_length=3,
         max_length=5,
     )
+    gallery_items: list[GalleryItemContent] = Field(
+        alias="galleryItems",
+        default_factory=lambda: [
+            GalleryItemContent(image=f"/images/gallery-{index}.jpg")
+            for index in range(1, 6)
+        ],
+    )
     wedding_date_iso: str = Field(alias="weddingDateIso", min_length=10, max_length=50)
     wedding_date_display: str = Field(
         alias="weddingDateDisplay", min_length=1, max_length=150
@@ -121,6 +135,15 @@ DEFAULT_WEDDING_CONTENT = WeddingContentPayload.model_validate(
             "/images/scroll-divider-3.jpg",
             "",
             "",
+        ],
+        "galleryItems": [
+            {
+                "image": f"/images/gallery-{index}.jpg",
+                "caption": "",
+                "alt": f"John Paul and Joyce wedding moment {index}",
+                "visible": True,
+            }
+            for index in range(1, 6)
         ],
         "weddingDateIso": "2027-03-20T16:00:00+08:00",
         "weddingDateDisplay": "Saturday · March 20, 2027",

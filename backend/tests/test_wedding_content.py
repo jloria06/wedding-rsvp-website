@@ -19,6 +19,8 @@ def test_wedding_content_uses_defaults_and_persists_updates() -> None:
         assert len(initial.content.hero_images) == 5
         assert len(initial.content.divider_images) == 5
         assert initial.content.divider_images[3:] == ["", ""]
+        assert len(initial.content.gallery_items) == 5
+        assert initial.content.gallery_items[0].visible is True
         assert initial.content.story_items[0].image == "/images/story-1.jpg"
         assert initial.content.story_items[0].images == ["/images/story-1.jpg"]
 
@@ -33,6 +35,8 @@ def test_wedding_content_uses_defaults_and_persists_updates() -> None:
         updated_content.hero_images = [
             f"/api/wedding-content/media/{index}" for index in range(1, 26)
         ]
+        updated_content.gallery_items[0].caption = "Our favorite memory"
+        updated_content.gallery_items[1].visible = False
 
         service.update_content(updated_content, administrator_id=1)
         persisted = service.get_content()
@@ -42,3 +46,5 @@ def test_wedding_content_uses_defaults_and_persists_updates() -> None:
         assert persisted.content.features.gift is False
         assert len(persisted.content.story_items[0].images) == 2
         assert len(persisted.content.hero_images) == 25
+        assert persisted.content.gallery_items[0].caption == "Our favorite memory"
+        assert persisted.content.gallery_items[1].visible is False

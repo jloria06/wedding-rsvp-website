@@ -14,6 +14,13 @@ export type StoryItemContent = {
   images: string[];
 };
 
+export type GalleryItemContent = {
+  image: string;
+  caption: string;
+  alt: string;
+  visible: boolean;
+};
+
 export type EntouragePersonContent = { role: string; name: string };
 export type EntourageGroupContent = {
   title: string;
@@ -34,6 +41,7 @@ export type WeddingContent = {
   portraitImage: string;
   heroImages: string[];
   dividerImages: string[];
+  galleryItems: GalleryItemContent[];
   weddingDateIso: string;
   weddingDateDisplay: string;
   rsvpDeadline: string;
@@ -62,6 +70,7 @@ export const defaultWeddingContent: WeddingContent = {
   portraitImage: "/images/portrait.jpg",
   heroImages: ["/images/hero-1.jpg", "/images/hero-2.jpg", "/images/hero-3.jpg", "/images/hero-4.jpg", "/images/hero-5.jpg"],
   dividerImages: ["/images/scroll-divider-1.jpg", "/images/scroll-divider-2.jpg", "/images/scroll-divider-3.jpg", "", ""],
+  galleryItems: Array.from({ length: 5 }, (_, index) => ({ image: `/images/gallery-${index + 1}.jpg`, caption: "", alt: `John Paul and Joyce wedding moment ${index + 1}`, visible: true })),
   weddingDateIso: "2027-03-20T16:00:00+08:00",
   weddingDateDisplay: "Saturday · March 20, 2027",
   rsvpDeadline: "",

@@ -26,6 +26,7 @@ import { RSVPManagement } from "./RSVPManagement";
 import { ContentManagement } from "./ContentManagement";
 import { SeatingManagement } from "./SeatingManagement";
 import { ReportsManagement } from "./ReportsManagement";
+import { GalleryManagement } from "./GalleryManagement";
 import type { AdminProfile, DashboardStatistics } from "./types";
 
 function friendlyRole(role: AdminProfile["role"]): string {
@@ -418,6 +419,12 @@ function AdminLayout({
           >
             Reports
           </a>
+          <a
+            className={location.pathname.startsWith("/admin/gallery") ? "is-active" : ""}
+            href="/admin/gallery"
+          >
+            Gallery
+          </a>
         </nav>
         <button className="admin-signout" type="button" onClick={onSignOut}>
           Sign out
@@ -446,6 +453,8 @@ function AdminLayout({
           <SeatingManagement accessToken={accessToken} role={profile.role} />
         ) : location.pathname.startsWith("/admin/reports") ? (
           <ReportsManagement accessToken={accessToken} />
+        ) : location.pathname.startsWith("/admin/gallery") ? (
+          <GalleryManagement accessToken={accessToken} role={profile.role} />
         ) : (
           <>
             <section className="admin-overview-heading" aria-labelledby="overview-title">
