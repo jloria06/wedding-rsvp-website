@@ -117,6 +117,14 @@ export type GuestUpdate = Omit<GuestInput, "invitation_code"> & {
   status: GuestStatus;
 };
 
+export type GuestImportResult = {
+  success: boolean;
+  message: string;
+  imported_count: number;
+  skipped_count: number;
+  errors: string[];
+};
+
 export type SeatingParty = {
   guest_id: number;
   invitation_code: string;

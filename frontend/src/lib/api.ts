@@ -83,9 +83,10 @@ export async function apiUpload<TResponse>(
   path: string,
   file: File,
   accessToken: string,
+  fieldName = "image",
 ): Promise<TResponse> {
   const body = new FormData();
-  body.append("image", file);
+  body.append(fieldName, file);
   const response = await fetch(`${apiBaseUrl}${path}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -95,7 +96,7 @@ export async function apiUpload<TResponse>(
   if (!response.ok) {
     const errorPayload = payload as ApiErrorPayload;
     throw new ApiError(
-      errorPayload.error?.message ?? errorPayload.message ?? errorPayload.detail ?? "The image could not be uploaded.",
+      errorPayload.error?.message ?? errorPayload.message ?? errorPayload.detail ?? "The file could not be uploaded.",
       response.status,
       errorPayload.error?.code ?? errorPayload.error_code,
     );

@@ -6,6 +6,7 @@ import type {
   AdminGuest,
   GuestInput,
   GuestUpdate,
+  GuestImportResult,
   MessageResponse,
   AdminRSVP,
   RSVPInput,
@@ -122,6 +123,24 @@ export function markAdministratorInvitationSent(
       headers: { Authorization: `Bearer ${accessToken}` },
     },
   );
+}
+
+export function importAdministratorGuests(
+  accessToken: string,
+  file: File,
+): Promise<GuestImportResult> {
+  return apiUpload<GuestImportResult>(
+    "/admin/guests/import.csv",
+    file,
+    accessToken,
+    "file",
+  );
+}
+
+export function exportAdministratorGuests(accessToken: string): Promise<Blob> {
+  return apiDownload("/admin/guests/export.csv", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
 }
 
 type RSVPListResponse = { success: boolean; rsvps: AdminRSVP[]; total: number };

@@ -115,3 +115,11 @@ class AdminGuestDeleteResponse(BaseModel):
     success: bool = True
     message: str
     guest_id: int
+
+
+class AdminGuestImportResponse(BaseModel):
+    success: bool = True
+    message: str
+    imported_count: int
+    skipped_count: int
+    errors: list[str]

@@ -1,13 +1,15 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, File, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.database.session import get_database_session
+from app.core.exceptions import ApplicationError
 from app.schemas import (
     AdminGuestCreateRequest,
     AdminGuestCreateResponse,
     AdminGuestDeleteResponse,
+    AdminGuestImportResponse,
     AdminGuestListResponse,
     AdminGuestUpdateRequest,
     AdminGuestUpdateResponse,
@@ -26,6 +28,8 @@ DatabaseSession = Annotated[
     Depends(get_database_session),
 ]
 
+MAX_GUEST_CSV_BYTES = 2 * 1024 * 1024
+
 
 @router.get(
     "",
@@ -40,6 +44,64 @@ def list_guests(
     service = AdminGuestManagementService(database_session)
 
     return service.list_guests()
+
+
+@router.get(
+    "/export.csv",
+    summary="Export wedding guests",
+)
+def export_guests(
+    current_administrator: DashboardAdministrator,
+    database_session: DatabaseSession,
+) -> Response:
+    content = AdminGuestManagementService(database_session).export_csv()
+    return Response(
+        content=content,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="wedding-guests.csv"'
+        },
+    )
+
+
+@router.post(
+    "/import.csv",
+    response_model=AdminGuestImportResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Import wedding guests from CSV",
+)
+async def import_guests(
+    current_administrator: GuestManager,
+    database_session: DatabaseSession,
+    file: Annotated[UploadFile, File()],
+) -> AdminGuestImportResponse:
+    data = await file.read(MAX_GUEST_CSV_BYTES + 1)
+    if len(data) > MAX_GUEST_CSV_BYTES:
+        raise ApplicationError("The guest CSV must be 2 MB or smaller.")
+
+    try:
+        content = data.decode("utf-8-sig")
+    except UnicodeDecodeError as error:
+        raise ApplicationError("The guest CSV must use UTF-8 encoding.") from error
+
+    try:
+        response = AdminGuestManagementService(database_session).import_csv(content)
+    except ValueError as error:
+        raise ApplicationError(str(error)) from error
+
+    AdminAuditService(database_session).record(
+        current_administrator,
+        action="guest.imported",
+        resource_type="guest",
+        summary=f"Imported {response.imported_count} guests from CSV.",
+        details={
+            "filename": file.filename or "guests.csv",
+            "imported_count": response.imported_count,
+            "skipped_count": response.skipped_count,
+        },
+    )
+    database_session.commit()
+    return response
 
 
 @router.post(

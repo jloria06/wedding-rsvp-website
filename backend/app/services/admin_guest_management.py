@@ -1,4 +1,8 @@
+import csv
+import io
+import re
 from datetime import UTC, datetime
+from uuid import uuid4
 
 from sqlalchemy.orm import Session
 
@@ -9,6 +13,7 @@ from app.schemas import (
     AdminGuestCreateRequest,
     AdminGuestCreateResponse,
     AdminGuestDeleteResponse,
+    AdminGuestImportResponse,
     AdminGuestListItem,
     AdminGuestListResponse,
     AdminGuestUpdateRequest,
@@ -162,6 +167,131 @@ class AdminGuestManagementService:
             message="Invitation marked as sent.",
             guest=self._build_guest_item(guest),
         )
+
+    def import_csv(self, content: str) -> AdminGuestImportResponse:
+        reader = csv.DictReader(io.StringIO(content))
+
+        if reader.fieldnames is None:
+            raise ValueError("The CSV file must include a header row.")
+
+        imported_count = 0
+        errors: list[str] = []
+
+        for row_number, source_row in enumerate(reader, start=2):
+            row = {
+                self._normalize_header(key): (value or "").strip()
+                for key, value in source_row.items()
+                if key is not None
+            }
+
+            if not any(row.values()):
+                continue
+
+            try:
+                first_name = row.get("first_name", "")
+                last_name = row.get("last_name", "")
+                invitation_code = row.get("invitation_code", "") or self._new_code(
+                    first_name,
+                    last_name,
+                )
+                request = AdminGuestCreateRequest(
+                    invitation_code=invitation_code,
+                    first_name=first_name,
+                    middle_name=row.get("middle_name") or None,
+                    last_name=last_name,
+                    email=row.get("email") or None,
+                    phone_number=row.get("phone_number") or None,
+                    household_name=row.get("household_name") or None,
+                    maximum_companions=int(row.get("maximum_companions") or 0),
+                    age_group=row.get("age_group") or "adult",
+                    is_primary_guest=self._parse_boolean(
+                        row.get("is_primary_guest", "true")
+                    ),
+                )
+                self.create_guest(request)
+                imported_count += 1
+            except (AuthorizationError, ValueError) as error:
+                errors.append(f"Row {row_number}: {error}")
+
+        return AdminGuestImportResponse(
+            message=(
+                f"Imported {imported_count} guest"
+                f"{'s' if imported_count != 1 else ''}."
+            ),
+            imported_count=imported_count,
+            skipped_count=len(errors),
+            errors=errors,
+        )
+
+    def export_csv(self) -> str:
+        output = io.StringIO(newline="")
+        writer = csv.writer(output)
+        writer.writerow(
+            [
+                "invitation_code",
+                "first_name",
+                "middle_name",
+                "last_name",
+                "email",
+                "phone_number",
+                "household_name",
+                "age_group",
+                "is_primary_guest",
+                "guest_status",
+                "rsvp_status",
+                "invitation_sent_at",
+            ]
+        )
+
+        for guest in self.guest_repository.list_all():
+            writer.writerow(
+                [
+                    guest.invitation_code,
+                    guest.first_name,
+                    guest.middle_name or "",
+                    guest.last_name,
+                    guest.email or "",
+                    guest.phone_number or "",
+                    guest.household_name or "",
+                    guest.age_group.value,
+                    "true" if guest.is_primary_guest else "false",
+                    guest.status.value,
+                    guest.rsvp.status.value if guest.rsvp is not None else "pending",
+                    (
+                        guest.invitation_sent_at.isoformat()
+                        if guest.invitation_sent_at
+                        else ""
+                    ),
+                ]
+            )
+
+        return output.getvalue()
+
+    def _new_code(self, first_name: str, last_name: str) -> str:
+        name = re.sub(
+            r"[^A-Z0-9]+",
+            "-",
+            f"{first_name}-{last_name}".upper(),
+        ).strip("-")
+        prefix = name[:40] or "GUEST"
+
+        while True:
+            code = f"{prefix}-{uuid4().hex[:6].upper()}"
+            if not self.guest_repository.invitation_code_exists(code):
+                return code
+
+    @staticmethod
+    def _normalize_header(value: str) -> str:
+        return re.sub(r"[^a-z0-9]+", "_", value.strip().lower()).strip("_")
+
+    @staticmethod
+    def _parse_boolean(value: str) -> bool:
+        normalized = value.strip().lower()
+        if normalized in {"", "true", "yes", "y", "1"}:
+            return True
+        if normalized in {"false", "no", "n", "0"}:
+            return False
+        raise ValueError(f"Invalid is_primary_guest value '{value}'.")
 
     @staticmethod
     def _build_guest_item(

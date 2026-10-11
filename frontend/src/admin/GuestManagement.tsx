@@ -1,10 +1,19 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import { QRCodeSVG } from "qrcode.react";
 
 import { ApiError } from "../lib/api";
 import {
   createAdministratorGuest,
   deactivateAdministratorGuest,
+  exportAdministratorGuests,
+  importAdministratorGuests,
   listAdministratorGuests,
   markAdministratorInvitationSent,
   updateAdministratorGuest,
@@ -14,6 +23,7 @@ import type {
   AdminRole,
   AgeGroup,
   GuestInput,
+  GuestImportResult,
   GuestStatus,
   GuestUpdate,
   RSVPStatus,
@@ -82,6 +92,10 @@ export function GuestManagement({
   const [invitationGuest, setInvitationGuest] = useState<AdminGuest | null>(null);
   const [invitationFeedback, setInvitationFeedback] = useState("");
   const [isMarkingSent, setIsMarkingSent] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [importResult, setImportResult] = useState<GuestImportResult | null>(null);
+  const csvInputRef = useRef<HTMLInputElement | null>(null);
   const canManage = role !== "viewer";
 
   useEffect(() => {
@@ -232,13 +246,83 @@ export function GuestManagement({
     }
   }
 
+  async function importCsv(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportResult(null);
+    setErrorMessage("");
+
+    try {
+      const result = await importAdministratorGuests(accessToken, file);
+      setImportResult(result);
+      setReloadKey((value) => value + 1);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof ApiError ? error.message : "The guest CSV could not be imported.",
+      );
+    } finally {
+      setIsImporting(false);
+    }
+  }
+
+  async function exportCsv(): Promise<void> {
+    setIsExporting(true);
+    setErrorMessage("");
+
+    try {
+      const blob = await exportAdministratorGuests(accessToken);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "wedding-guests.csv";
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof ApiError ? error.message : "The guest CSV could not be exported.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   const editorOpen = isCreating || editingGuest !== null;
 
   return (
     <section className="admin-guests" aria-labelledby="guest-management-title">
       <div className="admin-section-heading">
         <div><p className="admin-status-label">Phase 9</p><h2 id="guest-management-title">Guest management</h2><p>{guests.length} active invitation records</p></div>
-        {canManage ? <button type="button" onClick={openCreate}>Add guest</button> : null}
+        <div className="admin-section-actions">
+          <button
+            type="button"
+            onClick={() => void exportCsv()}
+            disabled={isExporting}
+          >
+            {isExporting ? "Exporting..." : "Export CSV"}
+          </button>
+          {canManage ? (
+            <>
+              <input
+                ref={csvInputRef}
+                className="admin-hidden-input"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(event) => void importCsv(event)}
+              />
+              <button
+                type="button"
+                onClick={() => csvInputRef.current?.click()}
+                disabled={isImporting}
+              >
+                {isImporting ? "Importing..." : "Import CSV"}
+              </button>
+              <button type="button" onClick={openCreate}>Add guest</button>
+            </>
+          ) : null}
+        </div>
       </div>
 
       <div className="admin-guest-filters">
@@ -249,6 +333,17 @@ export function GuestManagement({
       </div>
 
       {errorMessage ? <p className="admin-error" role="alert">{errorMessage}</p> : null}
+      {importResult ? (
+        <div className="admin-import-result" role="status">
+          <strong>{importResult.message}</strong>
+          {importResult.skipped_count ? (
+            <details>
+              <summary>{importResult.skipped_count} rows skipped</summary>
+              <ul>{importResult.errors.map((error) => <li key={error}>{error}</li>)}</ul>
+            </details>
+          ) : null}
+        </div>
+      ) : null}
       {isLoading ? (
         <p className="admin-table-message">Loading guests...</p>
       ) : (
