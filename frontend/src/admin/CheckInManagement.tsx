@@ -11,6 +11,23 @@ import {
 import type { AdminGuest, AdminRole } from "./types";
 
 const VENUE_CAPACITY = 150;
+const ROSTER_CACHE_KEY = "wedding-rsvp-check-in-roster";
+const PENDING_CHECK_INS_KEY = "wedding-rsvp-pending-check-ins";
+
+type PendingCheckIn = {
+  guestId: number;
+  action: "check_in" | "check_out";
+  companionCount: number;
+};
+
+function readStoredValue<T>(key: string, fallback: T): T {
+  try {
+    const stored = sessionStorage.getItem(key);
+    return stored ? JSON.parse(stored) as T : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 function invitationCodeFromQr(value: string): string {
   const trimmed = value.trim();
@@ -29,7 +46,7 @@ export function CheckInManagement({
   accessToken: string;
   role: AdminRole;
 }) {
-  const [guests, setGuests] = useState<AdminGuest[]>([]);
+  const [guests, setGuests] = useState<AdminGuest[]>(() => readStoredValue(ROSTER_CACHE_KEY, []));
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "waiting" | "checked_in">("all");
   const [busyGuestId, setBusyGuestId] = useState<number | null>(null);
@@ -41,14 +58,74 @@ export function CheckInManagement({
   const [scanMessage, setScanMessage] = useState("");
   const [scannedGuest, setScannedGuest] = useState<AdminGuest | null>(null);
   const [companionArrivalCount, setCompanionArrivalCount] = useState(0);
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const [pendingCheckIns, setPendingCheckIns] = useState<PendingCheckIn[]>(() =>
+    readStoredValue(PENDING_CHECK_INS_KEY, []),
+  );
+  const [isSyncing, setIsSyncing] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
+    let isActive = true;
     listAdministratorGuests(accessToken)
-      .then((response) => setGuests(response.guests))
-      .catch((error) => setErrorMessage(error instanceof ApiError ? error.message : "Guest check-in list could not be loaded."))
-      .finally(() => setIsLoading(false));
+      .then((response) => {
+        if (!isActive) return;
+        setGuests(response.guests);
+        sessionStorage.setItem(ROSTER_CACHE_KEY, JSON.stringify(response.guests));
+        setErrorMessage("");
+      })
+      .catch((error) => {
+        if (!isActive || readStoredValue<AdminGuest[]>(ROSTER_CACHE_KEY, []).length) return;
+        setErrorMessage(error instanceof ApiError ? error.message : "Guest check-in list could not be loaded.");
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+    return () => {
+      isActive = false;
+    };
   }, [accessToken]);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  const storeGuests = useCallback((update: (current: AdminGuest[]) => AdminGuest[]) => {
+    setGuests((current) => {
+      const updated = update(current);
+      sessionStorage.setItem(ROSTER_CACHE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const storePendingCheckIns = useCallback((update: (current: PendingCheckIn[]) => PendingCheckIn[]) => {
+    setPendingCheckIns((current) => {
+      const updated = update(current);
+      sessionStorage.setItem(PENDING_CHECK_INS_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const queueOfflineCheckIn = useCallback((guest: AdminGuest, action: PendingCheckIn["action"], companionCount: number) => {
+    const optimisticGuest: AdminGuest = {
+      ...guest,
+      checked_in_at: action === "check_in" ? new Date().toISOString() : null,
+      checked_in_companion_count: action === "check_in" ? companionCount : 0,
+    };
+    storeGuests((current) => current.map((item) => item.id === guest.id ? optimisticGuest : item));
+    storePendingCheckIns((current) => [
+      ...current.filter((item) => item.guestId !== guest.id),
+      { guestId: guest.id, action, companionCount },
+    ]);
+    setScanMessage("Saved on this device. It will sync when the internet connection returns.");
+  }, [storeGuests, storePendingCheckIns]);
 
   const attending = useMemo(
     () => guests.filter((guest) => guest.rsvp_status === "attending"),
@@ -123,15 +200,25 @@ export function CheckInManagement({
 
   async function toggleCheckIn(guest: AdminGuest, companionCount = guest.companion_count): Promise<void> {
     if (role === "viewer") return;
+    const action = guest.checked_in_at ? "check_out" : "check_in";
+    if (!navigator.onLine) {
+      queueOfflineCheckIn(guest, action, companionCount);
+      return;
+    }
     setBusyGuestId(guest.id);
     setErrorMessage("");
     try {
       const response = guest.checked_in_at
         ? await checkOutAdministratorGuest(accessToken, guest.id)
         : await checkInAdministratorGuest(accessToken, guest.id, companionCount);
-      setGuests((current) => current.map((item) => item.id === guest.id ? response.guest : item));
+      storeGuests((current) => current.map((item) => item.id === guest.id ? response.guest : item));
     } catch (error) {
-      setErrorMessage(error instanceof ApiError ? error.message : "The check-in could not be updated.");
+      if (!navigator.onLine || !(error instanceof ApiError)) {
+        setIsOnline(false);
+        queueOfflineCheckIn(guest, action, companionCount);
+      } else {
+        setErrorMessage(error.message);
+      }
     } finally {
       setBusyGuestId(null);
     }
@@ -139,18 +226,62 @@ export function CheckInManagement({
 
   async function savePartyArrival(guest: AdminGuest): Promise<void> {
     if (role === "viewer") return;
+    if (!navigator.onLine) {
+      queueOfflineCheckIn(guest, "check_in", companionArrivalCount);
+      setScannedGuest(null);
+      return;
+    }
     setBusyGuestId(guest.id);
     setErrorMessage("");
     try {
       const response = await checkInAdministratorGuest(accessToken, guest.id, companionArrivalCount);
-      setGuests((current) => current.map((item) => item.id === guest.id ? response.guest : item));
+      storeGuests((current) => current.map((item) => item.id === guest.id ? response.guest : item));
       setScannedGuest(null);
     } catch (error) {
-      setErrorMessage(error instanceof ApiError ? error.message : "The party check-in could not be updated.");
+      if (!navigator.onLine || !(error instanceof ApiError)) {
+        setIsOnline(false);
+        queueOfflineCheckIn(guest, "check_in", companionArrivalCount);
+        setScannedGuest(null);
+      } else {
+        setErrorMessage(error.message);
+      }
     } finally {
       setBusyGuestId(null);
     }
   }
+
+  useEffect(() => {
+    if (!pendingCheckIns.length) {
+      setIsSyncing(false);
+      return;
+    }
+    if (!isOnline || role === "viewer") return;
+    let isActive = true;
+    setIsSyncing(true);
+
+    async function synchronize(): Promise<void> {
+      for (const pending of pendingCheckIns) {
+        try {
+          const response = pending.action === "check_in"
+            ? await checkInAdministratorGuest(accessToken, pending.guestId, pending.companionCount)
+            : await checkOutAdministratorGuest(accessToken, pending.guestId);
+          if (!isActive) return;
+          storeGuests((current) => current.map((item) => item.id === pending.guestId ? response.guest : item));
+          storePendingCheckIns((current) => current.filter((item) => item.guestId !== pending.guestId));
+        } catch (error) {
+          if (!isActive) return;
+          setErrorMessage(error instanceof ApiError ? error.message : "Offline check-ins could not be synchronized yet.");
+          break;
+        }
+      }
+      if (isActive) setIsSyncing(false);
+    }
+
+    void synchronize();
+    return () => {
+      isActive = false;
+    };
+  }, [accessToken, isOnline, pendingCheckIns, role, storeGuests, storePendingCheckIns]);
 
   async function exportRoster(): Promise<void> {
     setIsExporting(true);
@@ -194,6 +325,10 @@ export function CheckInManagement({
       </div>
 
       {remainingCapacity < 0 ? <p className="admin-capacity-warning" role="alert">Confirmed attendance is {Math.abs(remainingCapacity)} people above the 150-person venue capacity.</p> : null}
+      <div className={`admin-connectivity-status ${isOnline ? "is-online" : "is-offline"}`} role="status">
+        <strong>{isOnline ? (isSyncing ? "Synchronizing check-ins..." : "Online") : "Offline event mode"}</strong>
+        <span>{pendingCheckIns.length ? `${pendingCheckIns.length} check-in ${pendingCheckIns.length === 1 ? "change" : "changes"} waiting to sync.` : isOnline ? "The event roster is current." : "Check-ins will be saved on this device. Keep this tab open."}</span>
+      </div>
 
       <div className="admin-checkin-filters">
         <input aria-label="Search attending guests" placeholder="Search name, invitation code, or guest group" value={query} onChange={(event) => setQuery(event.target.value)} />

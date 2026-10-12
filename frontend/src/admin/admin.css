@@ -626,6 +626,9 @@
 .admin-checkin-summary strong { margin-top:.45rem; font-family:"Cormorant Garamond",Georgia,serif; font-size:2rem; font-weight:600; }
 .admin-checkin-summary article.is-over-capacity { border-color:#d9a3ac; background:#fff4f5; color:#8b2f3f; }
 .admin-capacity-warning { margin:0; padding:.8rem 1rem; border-radius:.7rem; background:#fff0f2; color:#8b2f3f; font-size:.8rem; font-weight:700; }
+.admin-connectivity-status { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin:1rem 0; padding:.8rem 1rem; border:1px solid #b8dcc5; border-radius:.7rem; background:#eef9f2; color:#27643c; font-size:.82rem; }
+.admin-connectivity-status.is-offline { border-color:#e1c47f; background:#fff8e8; color:#765712; }
+.admin-connectivity-status span { text-align:right; }
 .admin-checkin-filters { display:grid; grid-template-columns:minmax(18rem,1fr) minmax(13rem,.35fr); gap:.75rem; }
 .admin-checkin-filters input, .admin-checkin-filters select { width:100%; min-height:2.75rem; padding:.65rem .8rem; border:1px solid var(--admin-border); border-radius:.65rem; background:#fff; color:var(--admin-ink); font:inherit; }
 .admin-checkin-table { min-width:58rem; }
