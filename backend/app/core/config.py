@@ -65,6 +65,11 @@ class Settings(BaseSettings):
         alias="ADMIN_LOCKOUT_MINUTES",
         ge=1,
     )
+    venue_capacity: int = Field(
+        default=150,
+        alias="VENUE_CAPACITY",
+        ge=1,
+    )
 
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     log_directory: Path = Field(alias="LOG_DIRECTORY")

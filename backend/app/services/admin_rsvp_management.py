@@ -20,13 +20,22 @@ from app.schemas.admin_rsvp import (
     AdminRSVPMutationResponse,
     AdminRSVPUpsertRequest,
 )
+from app.services.rsvp_capacity import RSVPCapacityService
 
 
 class AdminRSVPManagementService:
-    def __init__(self, database_session: Session) -> None:
+    def __init__(
+        self,
+        database_session: Session,
+        venue_capacity: int | None = None,
+    ) -> None:
         self.database_session = database_session
         self.guest_repository = GuestRepository(database_session)
         self.rsvp_repository = RSVPRepository(database_session)
+        self.capacity_service = RSVPCapacityService(
+            database_session,
+            venue_capacity,
+        )
 
     def list_rsvps(self) -> AdminRSVPListResponse:
         guests = self.guest_repository.list_all()
@@ -46,6 +55,11 @@ class AdminRSVPManagementService:
             raise AuthorizationError(
                 "The number of companions exceeds the invitation limit."
             )
+        self.capacity_service.ensure_available(
+            guest_id=guest.id,
+            status=request.status,
+            companion_count=len(request.companions),
+        )
 
         rsvp = self.rsvp_repository.get_by_guest_id(guest_id)
         created = rsvp is None

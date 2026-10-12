@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.database.base import Base
-from app.core.exceptions import AuthorizationError
+from app.core.exceptions import AuthorizationError, ConflictError
 from app.models import Guest, GuestStatus
 from app.schemas import RSVPSubmissionRequest
 from app.services.rsvp_submission import RSVPSubmissionService
@@ -83,5 +83,44 @@ def test_public_rsvp_submission_respects_manual_closure() -> None:
                 RSVPSubmissionRequest(
                     invitation_code=guest.invitation_code,
                     status="not_attending",
+                )
+            )
+
+
+def test_public_rsvp_rejects_attendance_above_capacity() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        first = Guest(
+            invitation_code="CAPACITY-FIRST",
+            first_name="First",
+            last_name="Guest",
+            status=GuestStatus.INVITED,
+        )
+        second = Guest(
+            invitation_code="CAPACITY-SECOND",
+            first_name="Second",
+            last_name="Guest",
+            status=GuestStatus.INVITED,
+        )
+        session.add_all([first, second])
+        session.flush()
+
+        service = RSVPSubmissionService(session, venue_capacity=1)
+        service.submit_rsvp(
+            RSVPSubmissionRequest(
+                invitation_code=first.invitation_code,
+                status="attending",
+                attendance_type="ceremony_and_reception",
+            )
+        )
+
+        with pytest.raises(ConflictError, match="attendance capacity"):
+            service.submit_rsvp(
+                RSVPSubmissionRequest(
+                    invitation_code=second.invitation_code,
+                    status="attending",
+                    attendance_type="ceremony_and_reception",
                 )
             )

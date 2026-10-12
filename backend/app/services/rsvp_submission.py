@@ -19,13 +19,22 @@ from app.schemas import (
     RSVPSubmissionResponse,
 )
 from app.services.wedding_content import WeddingContentService
+from app.services.rsvp_capacity import RSVPCapacityService
 
 
 class RSVPSubmissionService:
-    def __init__(self, database_session: Session) -> None:
+    def __init__(
+        self,
+        database_session: Session,
+        venue_capacity: int | None = None,
+    ) -> None:
         self.database_session = database_session
         self.guest_repository = GuestRepository(database_session)
         self.rsvp_repository = RSVPRepository(database_session)
+        self.capacity_service = RSVPCapacityService(
+            database_session,
+            venue_capacity,
+        )
 
     def submit_rsvp(
         self,
@@ -61,6 +70,16 @@ class RSVPSubmissionService:
             )
 
         existing_rsvp = self.rsvp_repository.get_by_guest_id(guest.id)
+        resulting_companion_count = (
+            companion_count
+            if existing_rsvp is None or companions_were_supplied
+            else existing_rsvp.companion_count
+        )
+        self.capacity_service.ensure_available(
+            guest_id=guest.id,
+            status=request.status,
+            companion_count=resulting_companion_count,
+        )
 
         if existing_rsvp is None:
             rsvp = RSVP(

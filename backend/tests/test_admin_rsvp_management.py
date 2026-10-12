@@ -1,7 +1,9 @@
 from sqlalchemy import create_engine, select
+import pytest
 from sqlalchemy.orm import Session
 
 from app.database.base import Base
+from app.core.exceptions import ConflictError
 from app.models import (
     AttendanceType,
     Guest,
@@ -97,3 +99,24 @@ def test_admin_rsvp_export_includes_pending_and_completed_guests() -> None:
 
         assert "Invitation Code,Guest" in content
         assert "CSV-TEST,Test Guest,Test Household,pending" in content
+
+
+def test_admin_rsvp_rejects_attendance_above_capacity() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        first = build_guest("ADMIN-CAPACITY-FIRST")
+        second = build_guest("ADMIN-CAPACITY-SECOND")
+        session.add_all([first, second])
+        session.flush()
+        service = AdminRSVPManagementService(session, venue_capacity=1)
+        request = AdminRSVPUpsertRequest(
+            status=RSVPStatus.ATTENDING,
+            attendance_type=AttendanceType.CEREMONY_AND_RECEPTION,
+        )
+
+        service.upsert_rsvp(first.id, request)
+
+        with pytest.raises(ConflictError, match="attendance capacity"):
+            service.upsert_rsvp(second.id, request)

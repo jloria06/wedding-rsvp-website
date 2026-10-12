@@ -22,6 +22,7 @@ Set these non-secret production environment values in Render:
 APP_ENV=production
 DEBUG=false
 HOST=0.0.0.0
+VENUE_CAPACITY=150
 LOG_DIRECTORY=/tmp/wedding-rsvp/logs
 UPLOAD_DIRECTORY=/tmp/wedding-rsvp/uploads
 ```
