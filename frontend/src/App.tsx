@@ -656,7 +656,7 @@ function App() {
   ======================================================= */
 
   useEffect(() => {
-    if (!invitationOpened) {
+    if (!invitationOpened || !siteReady) {
       return;
     }
 
@@ -687,7 +687,7 @@ function App() {
     return () => {
       observer.disconnect();
     };
-  }, [invitationOpened, entourageLoading]);
+  }, [invitationOpened, entourageLoading, siteReady]);
 
   /* =======================================================
      PHOTO LIGHTBOX KEYBOARD CONTROLS
