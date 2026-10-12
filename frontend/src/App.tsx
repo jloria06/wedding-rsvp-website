@@ -272,6 +272,7 @@ function App() {
   ------------------------------------------------------- */
 
   const [countdown, setCountdown] = useState({
+    months: 0,
     days: 0,
     hours: 0,
     minutes: 0,
@@ -606,6 +607,7 @@ function App() {
 
       if (difference <= 0) {
         setCountdown({
+          months: 0,
           days: 0,
           hours: 0,
           minutes: 0,
@@ -614,11 +616,26 @@ function App() {
         return;
       }
 
+      let months =
+        (weddingDate.getFullYear() - now.getFullYear()) * 12 +
+        weddingDate.getMonth() -
+        now.getMonth();
+      const monthAnchor = new Date(now);
+      monthAnchor.setMonth(monthAnchor.getMonth() + months);
+
+      if (monthAnchor > weddingDate) {
+        months -= 1;
+        monthAnchor.setMonth(monthAnchor.getMonth() - 1);
+      }
+
+      const remainingDifference = weddingDate.getTime() - monthAnchor.getTime();
+
       setCountdown({
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((difference / (1000 * 60)) % 60),
-        seconds: Math.floor((difference / 1000) % 60),
+        months,
+        days: Math.floor(remainingDifference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((remainingDifference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((remainingDifference / (1000 * 60)) % 60),
+        seconds: Math.floor((remainingDifference / 1000) % 60),
       });
     }
 
@@ -1375,6 +1392,10 @@ function App() {
             </div>
 
             <div className="countdown reveal-on-scroll reveal-scale">
+              <div>
+                <strong>{countdown.months}</strong>
+                <span>Months</span>
+              </div>
               <div>
                 <strong>{countdown.days}</strong>
                 <span>Days</span>

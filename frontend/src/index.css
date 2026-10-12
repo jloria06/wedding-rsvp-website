@@ -1787,7 +1787,7 @@ code {
   width: min(100%, 760px);
   margin: 0 auto 70px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   border-top: 1px solid var(--lavender);
   border-bottom: 1px solid var(--lavender);
 }
@@ -4036,11 +4036,15 @@ code {
   .countdown {
     grid-template-columns: repeat(2, 1fr);
   }
-  .countdown > div:nth-child(2) {
+  .countdown > div:nth-child(2n) {
     border-right: 0;
   }
-  .countdown > div:nth-child(-n + 2) {
+  .countdown > div:nth-child(-n + 4) {
     border-bottom: 1px solid rgba(147, 126, 195, 0.22);
+  }
+  .countdown > div:last-child {
+    grid-column: 1 / -1;
+    border-right: 0;
   }
   .venue-card {
     min-height: 370px;
