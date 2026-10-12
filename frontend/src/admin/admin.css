@@ -205,6 +205,7 @@
 }
 
 .admin-main {
+  min-width: 0;
   padding: clamp(1.5rem, 5vw, 4rem);
 }
 
@@ -346,7 +347,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 1100px) {
   .admin-dashboard {
     display: block;
   }
@@ -360,11 +361,24 @@
   }
 
   .admin-sidebar nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
     margin-top: 1rem;
   }
 
+  .admin-sidebar nav a {
+    text-align: center;
+  }
+
   .admin-signout {
+    width: 100%;
     margin-top: 1rem;
+  }
+
+  .admin-main {
+    width: 100%;
+    padding: clamp(1rem, 4vw, 2rem);
+    overflow: hidden;
   }
 
   .admin-header,
@@ -379,6 +393,21 @@
 
   .admin-statistics {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-sidebar nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-sidebar nav a {
+    padding: 0.7rem 0.45rem;
+    font-size: 0.74rem;
+  }
+
+  .admin-header h1 {
+    font-size: 2.35rem;
   }
 }
 
