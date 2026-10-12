@@ -7,7 +7,7 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import AuthorizationError
-from app.models import Guest, GuestStatus
+from app.models import Guest, GuestStatus, RSVPStatus
 from app.repositories import GuestRepository
 from app.schemas import (
     AdminGuestCreateRequest,
@@ -168,6 +168,31 @@ class AdminGuestManagementService:
             guest=self._build_guest_item(guest),
         )
 
+    def mark_rsvp_reminder_sent(
+        self,
+        guest_id: int,
+    ) -> AdminGuestUpdateResponse:
+        guest = self.guest_repository.get_by_id(guest_id)
+
+        if guest is None:
+            raise AuthorizationError(
+                "Guest not found.",
+            )
+
+        if guest.rsvp is not None and guest.rsvp.status != RSVPStatus.PENDING:
+            raise AuthorizationError(
+                "This guest has already responded to the RSVP.",
+            )
+
+        guest.last_rsvp_reminder_sent_at = datetime.now(UTC)
+        guest.rsvp_reminder_count += 1
+        self.database_session.flush()
+
+        return AdminGuestUpdateResponse(
+            message="RSVP reminder marked as sent.",
+            guest=self._build_guest_item(guest),
+        )
+
     def import_csv(self, content: str) -> AdminGuestImportResponse:
         reader = csv.DictReader(io.StringIO(content))
 
@@ -240,6 +265,8 @@ class AdminGuestManagementService:
                 "guest_status",
                 "rsvp_status",
                 "invitation_sent_at",
+                "last_rsvp_reminder_sent_at",
+                "rsvp_reminder_count",
             ]
         )
 
@@ -262,6 +289,12 @@ class AdminGuestManagementService:
                         if guest.invitation_sent_at
                         else ""
                     ),
+                    (
+                        guest.last_rsvp_reminder_sent_at.isoformat()
+                        if guest.last_rsvp_reminder_sent_at
+                        else ""
+                    ),
+                    guest.rsvp_reminder_count,
                 ]
             )
 
@@ -313,5 +346,7 @@ class AdminGuestManagementService:
             status=guest.status,
             rsvp_status=(guest.rsvp.status if guest.rsvp is not None else None),
             invitation_sent_at=guest.invitation_sent_at,
+            last_rsvp_reminder_sent_at=guest.last_rsvp_reminder_sent_at,
+            rsvp_reminder_count=guest.rsvp_reminder_count,
             created_at=guest.created_at,
         )

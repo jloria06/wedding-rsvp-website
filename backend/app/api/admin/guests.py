@@ -193,6 +193,34 @@ def mark_invitation_sent(
     return response
 
 
+@router.post(
+    "/{guest_id}/mark-rsvp-reminder-sent",
+    response_model=AdminGuestUpdateResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Mark a guest RSVP reminder as sent",
+)
+def mark_rsvp_reminder_sent(
+    guest_id: int,
+    current_administrator: GuestManager,
+    database_session: DatabaseSession,
+) -> AdminGuestUpdateResponse:
+    service = AdminGuestManagementService(database_session)
+    response = service.mark_rsvp_reminder_sent(guest_id)
+
+    AdminAuditService(database_session).record(
+        current_administrator,
+        action="guest.rsvp_reminder_sent",
+        resource_type="guest",
+        resource_id=response.guest.id,
+        summary=f"Marked RSVP reminder for {response.guest.full_name} as sent.",
+        details={"reminder_count": response.guest.rsvp_reminder_count},
+    )
+
+    database_session.commit()
+
+    return response
+
+
 @router.delete(
     "/{guest_id}",
     response_model=AdminGuestDeleteResponse,

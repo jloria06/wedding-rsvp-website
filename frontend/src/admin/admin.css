@@ -415,6 +415,8 @@
 .admin-row-actions button.is-danger { color:#8b2f3f; }
 .admin-delivery-status { display:inline-flex; padding:.3rem .55rem; border-radius:999px; background:#f3edf6; color:var(--admin-muted); font-size:.7rem; font-weight:700; white-space:nowrap; }
 .admin-delivery-status.is-sent { background:#e3f3e9; color:#27643c; }
+.admin-delivery-stack { display:grid; gap:.35rem; }
+.admin-delivery-stack small { color:var(--admin-muted); font-size:.7rem; white-space:nowrap; }
 .admin-table-message { padding:2rem; color:var(--admin-muted); text-align:center; }
 .admin-editor-backdrop { position:fixed; inset:0; z-index:100; display:grid; place-items:center; padding:1rem; background:rgba(52,45,60,.55); }
 .admin-guest-editor { width:min(100%,52rem); max-height:calc(100vh - 2rem); overflow-y:auto; padding:1.5rem; border-radius:1rem; background:var(--admin-ivory); box-shadow:0 2rem 5rem rgba(30,20,35,.3); }
@@ -443,6 +445,12 @@
 .admin-invitation-details > strong { font-family:"Cormorant Garamond", Georgia, serif; font-size:1.8rem; color:var(--admin-purple-dark); }
 .admin-invitation-details textarea { width:100%; padding:.75rem; border:1px solid var(--admin-border); border-radius:.65rem; resize:none; color:var(--admin-ink); font:inherit; }
 .admin-invitation-details p { margin:.25rem 0 0; color:var(--admin-muted); font-size:.78rem; }
+.admin-reminder-panel { display:grid; gap:.75rem; margin-top:1.25rem; padding:1rem; border:1px solid var(--admin-border); border-radius:1rem; background:#faf7fb; }
+.admin-reminder-panel span { color:var(--admin-purple-dark); font-weight:700; }
+.admin-reminder-panel p, .admin-reminder-complete { margin:.25rem 0 0; color:var(--admin-muted); font-size:.8rem; }
+.admin-reminder-panel textarea { width:100%; padding:.75rem; border:1px solid var(--admin-border); border-radius:.65rem; resize:vertical; color:var(--admin-ink); font:inherit; background:#fff; }
+.admin-reminder-actions { display:flex; justify-content:flex-end; gap:.6rem; flex-wrap:wrap; }
+.admin-reminder-actions button:last-child { background:var(--admin-purple-dark); color:#fff; }
 @media (max-width:640px) { .admin-invitation-layout { grid-template-columns:1fr; } }
 
 .admin-section-heading > button:disabled { cursor:wait; opacity:.65; }

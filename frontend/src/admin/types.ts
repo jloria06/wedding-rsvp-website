@@ -97,6 +97,8 @@ export type AdminGuest = {
   status: GuestStatus;
   rsvp_status: RSVPStatus | null;
   invitation_sent_at: string | null;
+  last_rsvp_reminder_sent_at: string | null;
+  rsvp_reminder_count: number;
   created_at: string;
 };
 

@@ -21,6 +21,8 @@ class AdminGuestListItem(BaseModel):
     status: GuestStatus
     rsvp_status: RSVPStatus | None
     invitation_sent_at: datetime | None
+    last_rsvp_reminder_sent_at: datetime | None
+    rsvp_reminder_count: int
     created_at: datetime
 
 

@@ -16,6 +16,7 @@ import {
   importAdministratorGuests,
   listAdministratorGuests,
   markAdministratorInvitationSent,
+  markAdministratorRsvpReminderSent,
   updateAdministratorGuest,
 } from "./api";
 import type {
@@ -42,6 +43,8 @@ type GuestDraft = {
   is_primary_guest: boolean;
   status: GuestStatus;
 };
+
+type DeliveryFilter = "all" | "sent" | "not_sent" | "reminder_needed" | "reminded";
 
 const emptyDraft = (): GuestDraft => ({
   invitation_code: "",
@@ -70,6 +73,10 @@ function invitationUrl(invitationCode: string): string {
   return url.toString();
 }
 
+function reminderMessage(guest: AdminGuest): string {
+  return `Hi ${guest.first_name}, this is a friendly reminder to send your wedding RSVP. Please respond using your personal link: ${invitationUrl(guest.invitation_code)}`;
+}
+
 export function GuestManagement({
   accessToken,
   role,
@@ -83,7 +90,7 @@ export function GuestManagement({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<GuestStatus | "all">("all");
   const [rsvpFilter, setRsvpFilter] = useState<RSVPStatus | "pending" | "all">("all");
-  const [deliveryFilter, setDeliveryFilter] = useState<"all" | "sent" | "not_sent">("all");
+  const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>("all");
   const [editingGuest, setEditingGuest] = useState<AdminGuest | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [draft, setDraft] = useState<GuestDraft>(emptyDraft);
@@ -92,6 +99,7 @@ export function GuestManagement({
   const [invitationGuest, setInvitationGuest] = useState<AdminGuest | null>(null);
   const [invitationFeedback, setInvitationFeedback] = useState("");
   const [isMarkingSent, setIsMarkingSent] = useState(false);
+  const [isMarkingReminder, setIsMarkingReminder] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [importResult, setImportResult] = useState<GuestImportResult | null>(null);
@@ -125,7 +133,13 @@ export function GuestManagement({
       const matchesRsvp = rsvpFilter === "all" || normalizedRsvp === rsvpFilter;
       const matchesDelivery = deliveryFilter === "all"
         || (deliveryFilter === "sent" && Boolean(guest.invitation_sent_at))
-        || (deliveryFilter === "not_sent" && !guest.invitation_sent_at);
+        || (deliveryFilter === "not_sent" && !guest.invitation_sent_at)
+        || (deliveryFilter === "reminder_needed"
+          && normalizedRsvp === "pending"
+          && !guest.last_rsvp_reminder_sent_at)
+        || (deliveryFilter === "reminded"
+          && normalizedRsvp === "pending"
+          && Boolean(guest.last_rsvp_reminder_sent_at));
       return matchesSearch && matchesStatus && matchesRsvp && matchesDelivery;
     });
   }, [deliveryFilter, guests, rsvpFilter, search, statusFilter]);
@@ -246,6 +260,44 @@ export function GuestManagement({
     }
   }
 
+  async function copyReminderMessage(): Promise<void> {
+    if (!invitationGuest) return;
+
+    try {
+      await navigator.clipboard.writeText(reminderMessage(invitationGuest));
+      setInvitationFeedback("RSVP reminder copied.");
+    } catch {
+      setInvitationFeedback("Copy failed. Select and copy the reminder below.");
+    }
+  }
+
+  async function markReminderSent(): Promise<void> {
+    if (!invitationGuest || !canManage) return;
+
+    setIsMarkingReminder(true);
+    setInvitationFeedback("");
+
+    try {
+      const response = await markAdministratorRsvpReminderSent(
+        accessToken,
+        invitationGuest.id,
+      );
+      setInvitationGuest(response.guest);
+      setGuests((current) =>
+        current.map((guest) =>
+          guest.id === response.guest.id ? response.guest : guest,
+        ),
+      );
+      setInvitationFeedback("RSVP reminder marked as sent.");
+    } catch (error) {
+      setInvitationFeedback(
+        error instanceof ApiError ? error.message : "Reminder status could not be updated.",
+      );
+    } finally {
+      setIsMarkingReminder(false);
+    }
+  }
+
   async function importCsv(event: ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -294,7 +346,7 @@ export function GuestManagement({
   return (
     <section className="admin-guests" aria-labelledby="guest-management-title">
       <div className="admin-section-heading">
-        <div><p className="admin-status-label">Phase 9</p><h2 id="guest-management-title">Guest management</h2><p>{guests.length} active invitation records</p></div>
+        <div><p className="admin-status-label">Phase 11</p><h2 id="guest-management-title">Guest management</h2><p>{guests.length} active invitation records</p></div>
         <div className="admin-section-actions">
           <button
             type="button"
@@ -329,7 +381,7 @@ export function GuestManagement({
         <input aria-label="Search guests" placeholder="Search name, code, email, or household" value={search} onChange={(e) => setSearch(e.target.value)} />
         <select aria-label="Filter guest status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as GuestStatus | "all")}><option value="all">All guest statuses</option><option value="invited">Invited</option><option value="verified">Verified</option><option value="blocked">Blocked</option></select>
         <select aria-label="Filter RSVP status" value={rsvpFilter} onChange={(e) => setRsvpFilter(e.target.value as RSVPStatus | "pending" | "all")}><option value="all">All RSVP statuses</option><option value="pending">Pending</option><option value="attending">Attending</option><option value="not_attending">Declined</option></select>
-        <select aria-label="Filter invitation delivery" value={deliveryFilter} onChange={(e) => setDeliveryFilter(e.target.value as "all" | "sent" | "not_sent")}><option value="all">All delivery statuses</option><option value="sent">Sent</option><option value="not_sent">Not sent</option></select>
+        <select aria-label="Filter invitation delivery" value={deliveryFilter} onChange={(e) => setDeliveryFilter(e.target.value as DeliveryFilter)}><option value="all">All delivery statuses</option><option value="sent">Invitation sent</option><option value="not_sent">Invitation not sent</option><option value="reminder_needed">Pending: reminder needed</option><option value="reminded">Pending: reminded</option></select>
       </div>
 
       {errorMessage ? <p className="admin-error" role="alert">{errorMessage}</p> : null}
@@ -373,9 +425,17 @@ export function GuestManagement({
                   <td><code>{guest.invitation_code}</code></td>
                   <td>
                     {guest.invitation_sent_at ? (
-                      <span className="admin-delivery-status is-sent">
-                        Sent {new Date(guest.invitation_sent_at).toLocaleDateString()}
-                      </span>
+                      <div className="admin-delivery-stack">
+                        <span className="admin-delivery-status is-sent">
+                          Sent {new Date(guest.invitation_sent_at).toLocaleDateString()}
+                        </span>
+                        {guest.last_rsvp_reminder_sent_at ? (
+                          <small>
+                            Reminded {new Date(guest.last_rsvp_reminder_sent_at).toLocaleDateString()}
+                            {guest.rsvp_reminder_count > 1 ? ` (${guest.rsvp_reminder_count})` : ""}
+                          </small>
+                        ) : null}
+                      </div>
                     ) : (
                       <span className="admin-delivery-status">Not sent</span>
                     )}
@@ -470,6 +530,42 @@ export function GuestManagement({
                 </p>
               </div>
             </div>
+
+            {(invitationGuest.rsvp_status ?? "pending") === "pending" ? (
+              <div className="admin-reminder-panel">
+                <div>
+                  <span>RSVP reminder</span>
+                  <p>
+                    {invitationGuest.last_rsvp_reminder_sent_at
+                      ? `Last marked sent ${new Date(invitationGuest.last_rsvp_reminder_sent_at).toLocaleString()} · ${invitationGuest.rsvp_reminder_count} reminder${invitationGuest.rsvp_reminder_count === 1 ? "" : "s"}`
+                      : "No RSVP reminder has been marked as sent."}
+                  </p>
+                </div>
+                <textarea
+                  aria-label="Personalized RSVP reminder"
+                  readOnly
+                  rows={4}
+                  value={reminderMessage(invitationGuest)}
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+                <div className="admin-reminder-actions">
+                  <button type="button" onClick={() => void copyReminderMessage()}>
+                    Copy reminder
+                  </button>
+                  {canManage ? (
+                    <button
+                      type="button"
+                      onClick={() => void markReminderSent()}
+                      disabled={isMarkingReminder}
+                    >
+                      {isMarkingReminder ? "Saving..." : "Mark reminder sent"}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <p className="admin-reminder-complete">This guest has already responded.</p>
+            )}
 
             {invitationFeedback ? (
               <p className="admin-success" role="status">{invitationFeedback}</p>

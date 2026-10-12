@@ -125,6 +125,19 @@ export function markAdministratorInvitationSent(
   );
 }
 
+export function markAdministratorRsvpReminderSent(
+  accessToken: string,
+  guestId: number,
+): Promise<GuestMutationResponse> {
+  return apiRequest<GuestMutationResponse>(
+    `/admin/guests/${guestId}/mark-rsvp-reminder-sent`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
+}
+
 export function importAdministratorGuests(
   accessToken: string,
   file: File,

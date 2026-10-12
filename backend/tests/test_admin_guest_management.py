@@ -2,7 +2,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.database.base import Base
-from app.models import AgeGroup, GuestStatus
+import pytest
+
+from app.core.exceptions import AuthorizationError
+from app.models import AgeGroup, GuestStatus, RSVP, RSVPStatus
 from app.schemas import AdminGuestCreateRequest, AdminGuestUpdateRequest
 from app.services.admin_guest_management import AdminGuestManagementService
 
@@ -44,6 +47,21 @@ def test_guest_management_preserves_age_group_and_editable_details() -> None:
 
         sent = service.mark_invitation_sent(created.guest.id)
         assert sent.guest.invitation_sent_at is not None
+
+        reminded = service.mark_rsvp_reminder_sent(created.guest.id)
+        assert reminded.guest.last_rsvp_reminder_sent_at is not None
+        assert reminded.guest.rsvp_reminder_count == 1
+
+        reminded_again = service.mark_rsvp_reminder_sent(created.guest.id)
+        assert reminded_again.guest.rsvp_reminder_count == 2
+
+        guest = service.guest_repository.get_by_id(created.guest.id)
+        assert guest is not None
+        guest.rsvp = RSVP(status=RSVPStatus.ATTENDING)
+        session.flush()
+
+        with pytest.raises(AuthorizationError):
+            service.mark_rsvp_reminder_sent(created.guest.id)
         assert service.list_guests().total == 1
 
 
@@ -76,3 +94,4 @@ def test_guest_csv_import_and_export_reports_invalid_rows() -> None:
         exported = service.export_csv()
         assert "invitation_code,first_name" in exported
         assert "bulk@example.com" in exported
+        assert "last_rsvp_reminder_sent_at" in exported
