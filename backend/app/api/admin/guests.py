@@ -8,6 +8,7 @@ from app.core.exceptions import ApplicationError
 from app.schemas import (
     AdminGuestCreateRequest,
     AdminGuestCreateResponse,
+    AdminGuestCheckInRequest,
     AdminGuestDeleteResponse,
     AdminGuestImportResponse,
     AdminGuestListResponse,
@@ -229,17 +230,22 @@ def mark_rsvp_reminder_sent(
 )
 def check_in_guest(
     guest_id: int,
+    request: AdminGuestCheckInRequest,
     current_administrator: GuestManager,
     database_session: DatabaseSession,
 ) -> AdminGuestUpdateResponse:
-    response = AdminGuestManagementService(database_session).check_in_guest(guest_id)
+    response = AdminGuestManagementService(database_session).check_in_guest(guest_id, request.companion_count)
     AdminAuditService(database_session).record(
         current_administrator,
         action="guest.checked_in",
         resource_type="guest",
         resource_id=response.guest.id,
         summary=f"Checked in {response.guest.full_name}.",
-        details={"checked_in_at": response.guest.checked_in_at.isoformat()},
+        details={
+            "checked_in_at": response.guest.checked_in_at.isoformat(),
+            "companions_checked_in": response.guest.checked_in_companion_count,
+            "party_checked_in": 1 + response.guest.checked_in_companion_count,
+        },
     )
     database_session.commit()
     return response

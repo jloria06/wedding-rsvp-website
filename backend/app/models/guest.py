@@ -127,6 +127,12 @@ class Guest(Base, TimestampMixin, SoftDeleteMixin):
         index=True,
     )
 
+    checked_in_companion_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
     rsvp: Mapped[RSVP | None] = relationship(
         back_populates="guest",
         uselist=False,

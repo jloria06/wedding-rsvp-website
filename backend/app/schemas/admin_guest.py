@@ -20,10 +20,12 @@ class AdminGuestListItem(BaseModel):
     is_primary_guest: bool
     status: GuestStatus
     rsvp_status: RSVPStatus | None
+    companion_count: int
     invitation_sent_at: datetime | None
     last_rsvp_reminder_sent_at: datetime | None
     rsvp_reminder_count: int
     checked_in_at: datetime | None
+    checked_in_companion_count: int
     created_at: datetime
 
 
@@ -31,6 +33,10 @@ class AdminGuestListResponse(BaseModel):
     success: bool = True
     guests: list[AdminGuestListItem]
     total: int
+
+
+class AdminGuestCheckInRequest(BaseModel):
+    companion_count: int = Field(default=0, ge=0, le=20)
 
 
 class AdminGuestCreateRequest(BaseModel):

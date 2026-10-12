@@ -1,6 +1,7 @@
 from app.schemas.admin_guest import (
     AdminGuestCreateRequest,
     AdminGuestCreateResponse,
+    AdminGuestCheckInRequest,
     AdminGuestDeleteResponse,
     AdminGuestImportResponse,
     AdminGuestListItem,
@@ -37,6 +38,7 @@ from app.schemas.rsvp import (
 __all__ = [
     "AdminGuestCreateRequest",
     "AdminGuestCreateResponse",
+    "AdminGuestCheckInRequest",
     "AdminGuestListItem",
     "AdminGuestListResponse",
     "AdminGuestUpdateRequest",

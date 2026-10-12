@@ -36,6 +36,7 @@ export function CheckInManagement({
   const [manualCode, setManualCode] = useState("");
   const [scanMessage, setScanMessage] = useState("");
   const [scannedGuest, setScannedGuest] = useState<AdminGuest | null>(null);
+  const [companionArrivalCount, setCompanionArrivalCount] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
@@ -49,7 +50,11 @@ export function CheckInManagement({
     () => guests.filter((guest) => guest.rsvp_status === "attending"),
     [guests],
   );
-  const checkedIn = attending.filter((guest) => guest.checked_in_at !== null).length;
+  const expectedPeople = attending.reduce((total, guest) => total + 1 + guest.companion_count, 0);
+  const checkedInPeople = attending.reduce(
+    (total, guest) => total + (guest.checked_in_at ? 1 + guest.checked_in_companion_count : 0),
+    0,
+  );
   const filteredGuests = attending.filter((guest) => {
     const text = `${guest.full_name} ${guest.invitation_code} ${guest.household_name ?? ""}`.toLowerCase();
     const matchesQuery = text.includes(query.trim().toLowerCase());
@@ -71,6 +76,7 @@ export function CheckInManagement({
       return;
     }
     setScannedGuest(guest);
+    setCompanionArrivalCount(guest.checked_in_at ? guest.checked_in_companion_count : guest.companion_count);
     setScanMessage(guest.checked_in_at ? `${guest.full_name} is already checked in.` : "Invitation found. Confirm the guest before checking in.");
     setIsScannerOpen(false);
   }, [guests]);
@@ -110,17 +116,32 @@ export function CheckInManagement({
     resolveInvitation(manualCode);
   }
 
-  async function toggleCheckIn(guest: AdminGuest): Promise<void> {
+  async function toggleCheckIn(guest: AdminGuest, companionCount = guest.companion_count): Promise<void> {
     if (role === "viewer") return;
     setBusyGuestId(guest.id);
     setErrorMessage("");
     try {
       const response = guest.checked_in_at
         ? await checkOutAdministratorGuest(accessToken, guest.id)
-        : await checkInAdministratorGuest(accessToken, guest.id);
+        : await checkInAdministratorGuest(accessToken, guest.id, companionCount);
       setGuests((current) => current.map((item) => item.id === guest.id ? response.guest : item));
     } catch (error) {
       setErrorMessage(error instanceof ApiError ? error.message : "The check-in could not be updated.");
+    } finally {
+      setBusyGuestId(null);
+    }
+  }
+
+  async function savePartyArrival(guest: AdminGuest): Promise<void> {
+    if (role === "viewer") return;
+    setBusyGuestId(guest.id);
+    setErrorMessage("");
+    try {
+      const response = await checkInAdministratorGuest(accessToken, guest.id, companionArrivalCount);
+      setGuests((current) => current.map((item) => item.id === guest.id ? response.guest : item));
+      setScannedGuest(null);
+    } catch (error) {
+      setErrorMessage(error instanceof ApiError ? error.message : "The party check-in could not be updated.");
     } finally {
       setBusyGuestId(null);
     }
@@ -140,10 +161,10 @@ export function CheckInManagement({
       </div>
 
       <div className="admin-checkin-summary" aria-label="Check-in totals">
-        <article><span>Expected</span><strong>{attending.length}</strong></article>
-        <article><span>Checked in</span><strong>{checkedIn}</strong></article>
-        <article><span>Waiting</span><strong>{attending.length - checkedIn}</strong></article>
-        <article><span>Progress</span><strong>{attending.length ? Math.round((checkedIn / attending.length) * 100) : 0}%</strong></article>
+        <article><span>Expected people</span><strong>{expectedPeople}</strong></article>
+        <article><span>People checked in</span><strong>{checkedInPeople}</strong></article>
+        <article><span>People waiting</span><strong>{expectedPeople - checkedInPeople}</strong></article>
+        <article><span>Progress</span><strong>{expectedPeople ? Math.round((checkedInPeople / expectedPeople) * 100) : 0}%</strong></article>
       </div>
 
       <div className="admin-checkin-filters">
@@ -167,7 +188,7 @@ export function CheckInManagement({
                 <td><strong>{guest.full_name}</strong><small>{guest.email ?? guest.phone_number ?? "No contact details"}</small></td>
                 <td><code>{guest.invitation_code}</code></td>
                 <td>{guest.household_name ?? "—"}</td>
-                <td>{guest.checked_in_at ? <span className="admin-status-pill is-attending">Checked in</span> : <span className="admin-status-pill">Waiting</span>}{guest.checked_in_at ? <small>{new Date(guest.checked_in_at).toLocaleString()}</small> : null}</td>
+                <td>{guest.checked_in_at ? <span className="admin-status-pill is-attending">{1 + guest.checked_in_companion_count} of {1 + guest.companion_count} arrived</span> : <span className="admin-status-pill">Waiting · party of {1 + guest.companion_count}</span>}{guest.checked_in_at ? <small>{new Date(guest.checked_in_at).toLocaleString()}</small> : null}</td>
                 <td><button className={guest.checked_in_at ? "admin-checkout-button" : "admin-checkin-button"} type="button" disabled={role === "viewer" || busyGuestId === guest.id} onClick={() => void toggleCheckIn(guest)}>{busyGuestId === guest.id ? "Saving..." : guest.checked_in_at ? "Undo check-in" : "Check in"}</button></td>
               </tr>
             ))}
@@ -195,9 +216,10 @@ export function CheckInManagement({
         <div className="admin-editor-backdrop" role="presentation">
           <section className="admin-qr-dialog admin-qr-confirm" role="dialog" aria-modal="true" aria-labelledby="qr-confirm-title">
             <header><div><p className="admin-status-label">Invitation found</p><h3 id="qr-confirm-title">{scannedGuest.full_name}</h3></div><button type="button" onClick={() => setScannedGuest(null)}>Close</button></header>
-            <dl><div><dt>Invitation</dt><dd>{scannedGuest.invitation_code}</dd></div><div><dt>Household</dt><dd>{scannedGuest.household_name ?? "None"}</dd></div><div><dt>Status</dt><dd>{scannedGuest.checked_in_at ? "Already checked in" : "Waiting"}</dd></div></dl>
+            <dl><div><dt>Invitation</dt><dd>{scannedGuest.invitation_code}</dd></div><div><dt>Household</dt><dd>{scannedGuest.household_name ?? "None"}</dd></div><div><dt>Party size</dt><dd>{1 + scannedGuest.companion_count}</dd></div><div><dt>Status</dt><dd>{scannedGuest.checked_in_at ? `${1 + scannedGuest.checked_in_companion_count} arrived` : "Waiting"}</dd></div></dl>
             <p className="admin-qr-message">{scanMessage}</p>
-            {!scannedGuest.checked_in_at ? <button className="admin-checkin-button" type="button" disabled={role === "viewer" || busyGuestId === scannedGuest.id} onClick={() => { void toggleCheckIn(scannedGuest).then(() => setScannedGuest(null)); }}>{busyGuestId === scannedGuest.id ? "Checking in..." : "Confirm check-in"}</button> : null}
+            {scannedGuest.companion_count > 0 ? <label className="admin-party-arrivals">Companions arrived<select value={companionArrivalCount} onChange={(event) => setCompanionArrivalCount(Number(event.target.value))}>{Array.from({ length: scannedGuest.companion_count + 1 }, (_, count) => <option key={count} value={count}>{count}</option>)}</select></label> : null}
+            <button className="admin-checkin-button" type="button" disabled={role === "viewer" || busyGuestId === scannedGuest.id} onClick={() => void savePartyArrival(scannedGuest)}>{busyGuestId === scannedGuest.id ? "Saving..." : scannedGuest.checked_in_at ? "Update party arrival" : `Confirm ${1 + companionArrivalCount} ${1 + companionArrivalCount === 1 ? "person" : "people"}`}</button>
           </section>
         </div>
       ) : null}

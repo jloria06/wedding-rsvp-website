@@ -193,15 +193,18 @@ class AdminGuestManagementService:
             guest=self._build_guest_item(guest),
         )
 
-    def check_in_guest(self, guest_id: int) -> AdminGuestUpdateResponse:
+    def check_in_guest(self, guest_id: int, companion_count: int = 0) -> AdminGuestUpdateResponse:
         guest = self.guest_repository.get_by_id(guest_id)
         if guest is None:
             raise AuthorizationError("Guest not found.")
         if guest.rsvp is None or guest.rsvp.status != RSVPStatus.ATTENDING:
             raise AuthorizationError("Only attending guests can be checked in.")
+        if companion_count > guest.rsvp.companion_count:
+            raise AuthorizationError("Companion arrivals cannot exceed the RSVP companion count.")
         if guest.checked_in_at is None:
             guest.checked_in_at = datetime.now(UTC)
-            self.database_session.flush()
+        guest.checked_in_companion_count = companion_count
+        self.database_session.flush()
         return AdminGuestUpdateResponse(
             message="Guest checked in successfully.",
             guest=self._build_guest_item(guest),
@@ -212,6 +215,7 @@ class AdminGuestManagementService:
         if guest is None:
             raise AuthorizationError("Guest not found.")
         guest.checked_in_at = None
+        guest.checked_in_companion_count = 0
         self.database_session.flush()
         return AdminGuestUpdateResponse(
             message="Guest check-in removed.",
@@ -370,9 +374,11 @@ class AdminGuestManagementService:
             is_primary_guest=guest.is_primary_guest,
             status=guest.status,
             rsvp_status=(guest.rsvp.status if guest.rsvp is not None else None),
+            companion_count=(guest.rsvp.companion_count if guest.rsvp is not None else 0),
             invitation_sent_at=guest.invitation_sent_at,
             last_rsvp_reminder_sent_at=guest.last_rsvp_reminder_sent_at,
             rsvp_reminder_count=guest.rsvp_reminder_count,
             checked_in_at=guest.checked_in_at,
+            checked_in_companion_count=guest.checked_in_companion_count,
             created_at=guest.created_at,
         )

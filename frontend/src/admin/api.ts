@@ -141,10 +141,12 @@ export function markAdministratorRsvpReminderSent(
 export function checkInAdministratorGuest(
   accessToken: string,
   guestId: number,
+  companionCount: number,
 ): Promise<GuestMutationResponse> {
   return apiRequest<GuestMutationResponse>(`/admin/guests/${guestId}/check-in`, {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ companion_count: companionCount }),
   });
 }
 

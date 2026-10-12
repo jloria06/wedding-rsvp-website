@@ -57,14 +57,20 @@ def test_guest_management_preserves_age_group_and_editable_details() -> None:
 
         guest = service.guest_repository.get_by_id(created.guest.id)
         assert guest is not None
-        guest.rsvp = RSVP(status=RSVPStatus.ATTENDING)
+        guest.rsvp = RSVP(status=RSVPStatus.ATTENDING, companion_count=1)
         session.flush()
 
-        checked_in = service.check_in_guest(created.guest.id)
+        checked_in = service.check_in_guest(created.guest.id, companion_count=1)
         assert checked_in.guest.checked_in_at is not None
+        assert checked_in.guest.companion_count == 1
+        assert checked_in.guest.checked_in_companion_count == 1
+
+        with pytest.raises(AuthorizationError, match="cannot exceed"):
+            service.check_in_guest(created.guest.id, companion_count=2)
 
         checked_out = service.check_out_guest(created.guest.id)
         assert checked_out.guest.checked_in_at is None
+        assert checked_out.guest.checked_in_companion_count == 0
 
         with pytest.raises(AuthorizationError):
             service.mark_rsvp_reminder_sent(created.guest.id)

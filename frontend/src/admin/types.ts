@@ -96,10 +96,12 @@ export type AdminGuest = {
   is_primary_guest: boolean;
   status: GuestStatus;
   rsvp_status: RSVPStatus | null;
+  companion_count: number;
   invitation_sent_at: string | null;
   last_rsvp_reminder_sent_at: string | null;
   rsvp_reminder_count: number;
   checked_in_at: string | null;
+  checked_in_companion_count: number;
   created_at: string;
 };
 

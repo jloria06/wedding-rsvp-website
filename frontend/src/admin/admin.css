@@ -650,4 +650,6 @@
 .admin-qr-confirm dt { color:var(--admin-muted); font-size:.72rem; font-weight:700; text-transform:uppercase; }
 .admin-qr-confirm dd { margin:0; font-size:.82rem; font-weight:700; }
 .admin-qr-confirm > .admin-checkin-button { width:100%; }
+.admin-party-arrivals { display:grid; grid-template-columns:1fr 7rem; align-items:center; gap:1rem; margin:1rem 0; font-size:.8rem; font-weight:700; }
+.admin-party-arrivals select { min-height:2.65rem; padding:.55rem .7rem; border:1px solid var(--admin-border); border-radius:.55rem; background:#fff; color:var(--admin-ink); font:inherit; }
 @media (max-width:520px) { .admin-qr-dialog form > div { grid-template-columns:1fr; } }
