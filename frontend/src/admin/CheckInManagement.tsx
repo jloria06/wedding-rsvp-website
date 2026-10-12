@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import QrScanner from "qr-scanner";
 
 import { ApiError } from "../lib/api";
 import {
@@ -7,12 +8,6 @@ import {
   listAdministratorGuests,
 } from "./api";
 import type { AdminGuest, AdminRole } from "./types";
-
-type DetectedBarcode = { rawValue: string };
-type BarcodeDetectorInstance = {
-  detect: (source: HTMLVideoElement) => Promise<DetectedBarcode[]>;
-};
-type BarcodeDetectorConstructor = new (options: { formats: string[] }) => BarcodeDetectorInstance;
 
 function invitationCodeFromQr(value: string): string {
   const trimmed = value.trim();
@@ -82,45 +77,31 @@ export function CheckInManagement({
 
   useEffect(() => {
     if (!isScannerOpen) return;
-    let stream: MediaStream | null = null;
-    let timer: number | null = null;
-    let cancelled = false;
     const videoElement = videoRef.current;
-
-    const Detector = (window as Window & { BarcodeDetector?: BarcodeDetectorConstructor }).BarcodeDetector;
-    if (!Detector || !navigator.mediaDevices?.getUserMedia) {
-      setScanMessage("Camera QR scanning is unavailable in this browser. Enter the invitation code below.");
+    if (!videoElement) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setScanMessage("Camera access is unavailable. Enter the invitation code below.");
       return;
     }
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false })
-      .then((cameraStream) => {
-        if (cancelled) {
-          cameraStream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-        stream = cameraStream;
-        const video = videoElement;
-        if (!video) return;
-        video.srcObject = cameraStream;
-        void video.play();
-        const detector = new Detector({ formats: ["qr_code"] });
-        timer = window.setInterval(() => {
-          if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
-          detector.detect(video)
-            .then((codes) => {
-              if (codes[0]?.rawValue) resolveInvitation(codes[0].rawValue);
-            })
-            .catch(() => setScanMessage("The camera could not read that QR code. Hold it steady or enter the code below."));
-        }, 350);
-      })
+    const scanner = new QrScanner(
+      videoElement,
+      (result) => resolveInvitation(result.data),
+      {
+        preferredCamera: "environment",
+        maxScansPerSecond: 8,
+        highlightScanRegion: true,
+        highlightCodeOutline: true,
+        returnDetailedScanResult: true,
+      },
+    );
+    scanner.start()
+      .then(() => setScanMessage("Camera ready. Hold the invitation QR code inside the frame."))
       .catch(() => setScanMessage("Camera access was not granted. Enter the invitation code below."));
 
     return () => {
-      cancelled = true;
-      if (timer !== null) window.clearInterval(timer);
-      stream?.getTracks().forEach((track) => track.stop());
-      if (videoElement) videoElement.srcObject = null;
+      scanner.destroy();
+      videoElement.srcObject = null;
     };
   }, [isScannerOpen, resolveInvitation]);
 
