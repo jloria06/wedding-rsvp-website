@@ -619,11 +619,13 @@
 @media (max-width:900px) { .admin-administrator-filters { grid-template-columns:1fr; } }
 
 .admin-checkin { display:grid; gap:1.1rem; }
-.admin-checkin-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.8rem; }
+.admin-checkin-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(10rem,1fr)); gap:.8rem; }
 .admin-checkin-summary article { padding:1rem 1.1rem; border:1px solid var(--admin-border); border-radius:.9rem; background:var(--admin-ivory); }
 .admin-checkin-summary span, .admin-checkin-summary strong { display:block; }
 .admin-checkin-summary span { color:var(--admin-muted); font-size:.7rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
 .admin-checkin-summary strong { margin-top:.45rem; font-family:"Cormorant Garamond",Georgia,serif; font-size:2rem; font-weight:600; }
+.admin-checkin-summary article.is-over-capacity { border-color:#d9a3ac; background:#fff4f5; color:#8b2f3f; }
+.admin-capacity-warning { margin:0; padding:.8rem 1rem; border-radius:.7rem; background:#fff0f2; color:#8b2f3f; font-size:.8rem; font-weight:700; }
 .admin-checkin-filters { display:grid; grid-template-columns:minmax(18rem,1fr) minmax(13rem,.35fr); gap:.75rem; }
 .admin-checkin-filters input, .admin-checkin-filters select { width:100%; min-height:2.75rem; padding:.65rem .8rem; border:1px solid var(--admin-border); border-radius:.65rem; background:#fff; color:var(--admin-ink); font:inherit; }
 .admin-checkin-table { min-width:58rem; }

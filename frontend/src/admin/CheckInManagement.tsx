@@ -9,6 +9,8 @@ import {
 } from "./api";
 import type { AdminGuest, AdminRole } from "./types";
 
+const VENUE_CAPACITY = 150;
+
 function invitationCodeFromQr(value: string): string {
   const trimmed = value.trim();
   try {
@@ -55,6 +57,7 @@ export function CheckInManagement({
     (total, guest) => total + (guest.checked_in_at ? 1 + guest.checked_in_companion_count : 0),
     0,
   );
+  const remainingCapacity = VENUE_CAPACITY - expectedPeople;
   const filteredGuests = attending.filter((guest) => {
     const text = `${guest.full_name} ${guest.invitation_code} ${guest.household_name ?? ""}`.toLowerCase();
     const matchesQuery = text.includes(query.trim().toLowerCase());
@@ -161,11 +164,15 @@ export function CheckInManagement({
       </div>
 
       <div className="admin-checkin-summary" aria-label="Check-in totals">
+        <article><span>Venue capacity</span><strong>{VENUE_CAPACITY}</strong></article>
         <article><span>Expected people</span><strong>{expectedPeople}</strong></article>
         <article><span>People checked in</span><strong>{checkedInPeople}</strong></article>
         <article><span>People waiting</span><strong>{expectedPeople - checkedInPeople}</strong></article>
+        <article className={remainingCapacity < 0 ? "is-over-capacity" : ""}><span>{remainingCapacity < 0 ? "Over capacity" : "Capacity remaining"}</span><strong>{Math.abs(remainingCapacity)}</strong></article>
         <article><span>Progress</span><strong>{expectedPeople ? Math.round((checkedInPeople / expectedPeople) * 100) : 0}%</strong></article>
       </div>
+
+      {remainingCapacity < 0 ? <p className="admin-capacity-warning" role="alert">Confirmed attendance is {Math.abs(remainingCapacity)} people above the 150-person venue capacity.</p> : null}
 
       <div className="admin-checkin-filters">
         <input aria-label="Search attending guests" placeholder="Search name, invitation code, or household" value={query} onChange={(event) => setQuery(event.target.value)} />

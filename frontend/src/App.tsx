@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { InvitationVerificationForm } from "./components/InvitationVerificationForm";
 import { RSVPForm } from "./components/RSVPForm";
+import { EventPass } from "./components/EventPass";
 import { apiAssetUrl, apiRequest } from "./lib/api";
 import { verifyInvitationCode } from "./services/rsvp";
 import {
@@ -2018,6 +2019,14 @@ function App() {
                           : "Unable to Attend"}
                       </strong>
                     </div>
+
+                    {rsvpResponse.rsvp.status === "attending" && verifiedGuest ? (
+                      <EventPass
+                        invitationCode={verifiedGuest.invitation_code}
+                        guestName={`${verifiedGuest.first_name} ${verifiedGuest.last_name}`}
+                        partySize={1 + rsvpResponse.rsvp.companion_count}
+                      />
+                    ) : null}
 
                     <button type="button" onClick={() => setRSVPResponse(null)}>
                       Update RSVP

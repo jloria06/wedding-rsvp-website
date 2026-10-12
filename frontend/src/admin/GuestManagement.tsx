@@ -6,7 +6,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import { EventPass } from "../components/EventPass";
 
 import { ApiError } from "../lib/api";
 import {
@@ -534,12 +534,11 @@ export function GuestManagement({
 
             <div className="admin-invitation-layout">
               <div className="admin-invitation-qr">
-                <QRCodeSVG
-                  value={invitationUrl(invitationGuest.invitation_code)}
-                  size={220}
-                  level="M"
-                  marginSize={2}
-                  title={`Invitation for ${invitationGuest.full_name}`}
+                <EventPass
+                  invitationCode={invitationGuest.invitation_code}
+                  guestName={invitationGuest.full_name}
+                  partySize={1 + (invitationGuest.rsvp_status === "attending" ? invitationGuest.companion_count : invitationGuest.maximum_companions)}
+                  compact
                 />
               </div>
               <div className="admin-invitation-details">
