@@ -65,6 +65,24 @@ def export_guests(
     )
 
 
+@router.get(
+    "/check-in/export.csv",
+    summary="Export the wedding-day check-in roster",
+)
+def export_check_in_roster(
+    current_administrator: DashboardAdministrator,
+    database_session: DatabaseSession,
+) -> Response:
+    content = AdminGuestManagementService(database_session).export_check_in_csv()
+    return Response(
+        content=content,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="wedding-check-in-roster.csv"'
+        },
+    )
+
+
 @router.post(
     "/import.csv",
     response_model=AdminGuestImportResponse,

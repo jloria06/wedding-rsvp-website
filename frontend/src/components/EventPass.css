@@ -1,14 +1,26 @@
-.event-pass { display:grid; justify-items:center; gap:.65rem; width:min(100%,24rem); margin:1.25rem auto 0; padding:1.25rem; border:1px solid rgba(130,105,173,.25); border-radius:1.1rem; background:#fffdf9; text-align:center; }
+.event-pass { position:relative; display:grid; justify-items:center; gap:.7rem; box-sizing:border-box; width:min(calc(100% - 1rem),27rem); margin:1.75rem auto 0; padding:1.65rem; overflow:hidden; border:1px solid rgba(130,105,173,.3); border-radius:1.4rem; background:radial-gradient(circle at top,#fff 0,#fffdf9 50%,#faf5fc 100%); box-shadow:0 1.25rem 3rem rgba(74,54,91,.12); text-align:center; }
+.event-pass::before,.event-pass::after { position:absolute; width:7rem; height:7rem; border:1px solid rgba(154,127,196,.16); border-radius:50%; content:""; pointer-events:none; }
+.event-pass::before { top:-4.5rem; left:-3.5rem; box-shadow:1.2rem 1rem 0 rgba(235,217,237,.22); }
+.event-pass::after { right:-3.5rem; bottom:-4.5rem; box-shadow:-1.2rem -1rem 0 rgba(226,217,246,.22); }
+.rsvp-confirmation > .event-pass { left:50%; margin-right:0; margin-left:0; transform:translateX(-50%); }
+.event-pass__monogram { color:#6c4c80; font-family:"Cormorant Garamond",Georgia,serif; font-size:1.35rem; font-weight:600; letter-spacing:.08em; }
+.event-pass__monogram span { margin:0 .25rem; color:#a282cf; font-family:"Great Vibes",cursive; font-weight:400; }
 .event-pass__eyebrow { margin:0!important; color:#8a72bd!important; font-size:.68rem!important; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
-.event-pass h4 { margin:0; font-family:"Cormorant Garamond",Georgia,serif; font-size:1.7rem; font-weight:600; }
-.event-pass__qr { display:grid; place-items:center; width:100%; padding:.75rem; border-radius:.8rem; background:#fff; }
+.event-pass h4 { margin:0; color:#4f3a5d; font-family:"Cormorant Garamond",Georgia,serif; font-size:2rem; font-weight:600; }
+.event-pass__divider { display:grid; grid-template-columns:4rem auto 4rem; align-items:center; gap:.5rem; color:#9a7fc4; }
+.event-pass__divider span { height:1px; background:linear-gradient(90deg,transparent,#cbb9df); }
+.event-pass__divider span:last-child { background:linear-gradient(90deg,#cbb9df,transparent); }
+.event-pass__divider b { font-size:.9rem; font-weight:400; }
+.event-pass__qr { display:grid; place-items:center; width:100%; padding:1rem; border:1px solid rgba(130,105,173,.12); border-radius:1rem; background:#fff; box-shadow:inset 0 0 0 .35rem #fbf8fc,0 .7rem 1.8rem rgba(74,54,91,.08); }
 .event-pass__qr svg { display:block; max-width:100%; height:auto; }
 .event-pass > strong { color:#59406c; font-size:.78rem; letter-spacing:.08em; }
 .event-pass > span { color:#6f6375; font-size:.78rem; font-weight:700; }
+.event-pass > small { color:#9a83a4; font-family:"Cormorant Garamond",Georgia,serif; font-size:.8rem; letter-spacing:.04em; }
 .event-pass > p:not(.event-pass__eyebrow) { margin:0!important; color:#817489!important; font-size:.75rem!important; }
 .event-pass__actions { display:flex; flex-wrap:wrap; justify-content:center; gap:.55rem; width:100%; }
-.event-pass__actions button { min-height:2.55rem; padding:.55rem .8rem; border:1px solid rgba(130,105,173,.3); border-radius:.6rem; background:#fff; color:#5e426b; cursor:pointer; font:inherit; font-size:.72rem; font-weight:800; }
-.event-pass__actions button:first-child { border-color:#654773; background:#654773; color:#fff; }
-.event-pass--compact { margin:0; padding:1rem; }
+.event-pass__actions button { min-height:2.7rem; padding:.6rem 1rem; border:1px solid rgba(130,105,173,.3); border-radius:999px; background:#fff; color:#5e426b; cursor:pointer; font:inherit; font-size:.72rem; font-weight:800; }
+.event-pass__actions button:first-child { border-color:#654773; background:linear-gradient(135deg,#5e426b,#8468bb); color:#fff; box-shadow:0 .45rem 1rem rgba(101,71,115,.2); }
+.event-pass--compact { left:auto; width:100%; margin:0; padding:1rem; transform:none; box-shadow:none; }
+.rsvp-confirmation > button { margin-top:1.4rem; }
 @media (max-width:480px) { .event-pass__actions { display:grid; grid-template-columns:1fr; } .event-pass__actions button { width:100%; } }
 @media print { .event-pass__actions { display:none; } }

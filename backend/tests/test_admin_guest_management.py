@@ -65,6 +65,10 @@ def test_guest_management_preserves_age_group_and_editable_details() -> None:
         assert checked_in.guest.companion_count == 1
         assert checked_in.guest.checked_in_companion_count == 1
 
+        roster = service.export_check_in_csv()
+        assert "expected_party_size" in roster
+        assert "CHILD-GUEST,Sample Child,Sample Household,2,yes,1,2,checked_in" in roster
+
         with pytest.raises(AuthorizationError, match="cannot exceed"):
             service.check_in_guest(created.guest.id, companion_count=2)
 

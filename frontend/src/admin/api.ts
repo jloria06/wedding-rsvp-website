@@ -178,6 +178,12 @@ export function exportAdministratorGuests(accessToken: string): Promise<Blob> {
   });
 }
 
+export function exportAdministratorCheckInRoster(accessToken: string): Promise<Blob> {
+  return apiDownload("/admin/guests/check-in/export.csv", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
 type RSVPListResponse = { success: boolean; rsvps: AdminRSVP[]; total: number };
 type RSVPMutationResponse = { success: boolean; message: string; rsvp: AdminRSVP };
 

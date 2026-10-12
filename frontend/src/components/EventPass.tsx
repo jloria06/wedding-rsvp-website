@@ -69,13 +69,16 @@ export function EventPass({
 
   return (
     <section className={`event-pass${compact ? " event-pass--compact" : ""}`} aria-labelledby={titleId} ref={passRef}>
+      <div className="event-pass__monogram" aria-hidden="true">JP <span>&amp;</span> J</div>
       <p className="event-pass__eyebrow">Wedding event pass</p>
       <h4 id={titleId}>{guestName}</h4>
+      <div className="event-pass__divider" aria-hidden="true"><span /><b>♡</b><span /></div>
       <div className="event-pass__qr">
         <QRCodeSVG value={value} size={compact ? 200 : 230} level="M" marginSize={2} title={`Event pass for ${guestName}`} />
       </div>
       <strong>{invitationCode}</strong>
       <span>Party of {partySize}</span>
+      <small>March 20, 2027 · Antipolo, Rizal</small>
       <p>Present this QR code at the venue entrance.</p>
       <div className="event-pass__actions">
         <button type="button" onClick={downloadQr}>Download QR</button>

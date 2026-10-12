@@ -5,6 +5,7 @@ import { ApiError } from "../lib/api";
 import {
   checkInAdministratorGuest,
   checkOutAdministratorGuest,
+  exportAdministratorCheckInRoster,
   listAdministratorGuests,
 } from "./api";
 import type { AdminGuest, AdminRole } from "./types";
@@ -34,6 +35,7 @@ export function CheckInManagement({
   const [busyGuestId, setBusyGuestId] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [manualCode, setManualCode] = useState("");
   const [scanMessage, setScanMessage] = useState("");
@@ -150,6 +152,24 @@ export function CheckInManagement({
     }
   }
 
+  async function exportRoster(): Promise<void> {
+    setIsExporting(true);
+    setErrorMessage("");
+    try {
+      const blob = await exportAdministratorCheckInRoster(accessToken);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `wedding-check-in-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setErrorMessage(error instanceof ApiError ? error.message : "The check-in roster could not be exported.");
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   return (
     <section className="admin-checkin" aria-labelledby="checkin-title">
       <div className="admin-section-heading">
@@ -158,9 +178,10 @@ export function CheckInManagement({
           <h2 id="checkin-title">Guest check-in</h2>
           <p>Confirm arrivals without changing RSVP responses.</p>
         </div>
-        <button type="button" onClick={() => { setScanMessage(""); setScannedGuest(null); setIsScannerOpen(true); }}>
-          Scan QR code
-        </button>
+        <div className="admin-section-actions">
+          <button type="button" disabled={isExporting} onClick={() => void exportRoster()}>{isExporting ? "Exporting..." : "Export CSV"}</button>
+          <button type="button" onClick={() => { setScanMessage(""); setScannedGuest(null); setIsScannerOpen(true); }}>Scan QR code</button>
+        </div>
       </div>
 
       <div className="admin-checkin-summary" aria-label="Check-in totals">

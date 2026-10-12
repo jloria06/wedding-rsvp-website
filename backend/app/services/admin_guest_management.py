@@ -329,6 +329,43 @@ class AdminGuestManagementService:
 
         return output.getvalue()
 
+    def export_check_in_csv(self) -> str:
+        output = io.StringIO(newline="")
+        writer = csv.writer(output)
+        writer.writerow(
+            [
+                "invitation_code",
+                "guest_name",
+                "household_name",
+                "expected_party_size",
+                "primary_guest_checked_in",
+                "companions_checked_in",
+                "total_people_arrived",
+                "check_in_status",
+                "checked_in_at",
+            ]
+        )
+
+        for guest in self.guest_repository.list_all():
+            if guest.rsvp is None or guest.rsvp.status != RSVPStatus.ATTENDING:
+                continue
+            is_checked_in = guest.checked_in_at is not None
+            writer.writerow(
+                [
+                    guest.invitation_code,
+                    guest.full_name,
+                    guest.household_name or "",
+                    1 + guest.rsvp.companion_count,
+                    "yes" if is_checked_in else "no",
+                    guest.checked_in_companion_count if is_checked_in else 0,
+                    (1 + guest.checked_in_companion_count) if is_checked_in else 0,
+                    "checked_in" if is_checked_in else "waiting",
+                    guest.checked_in_at.isoformat() if guest.checked_in_at else "",
+                ]
+            )
+
+        return output.getvalue()
+
     def _new_code(self, first_name: str, last_name: str) -> str:
         name = re.sub(
             r"[^A-Z0-9]+",
