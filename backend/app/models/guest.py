@@ -121,6 +121,12 @@ class Guest(Base, TimestampMixin, SoftDeleteMixin):
         nullable=False,
     )
 
+    checked_in_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+
     rsvp: Mapped[RSVP | None] = relationship(
         back_populates="guest",
         uselist=False,

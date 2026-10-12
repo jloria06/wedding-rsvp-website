@@ -28,6 +28,7 @@ import { SeatingManagement } from "./SeatingManagement";
 import { ReportsManagement } from "./ReportsManagement";
 import { AuditLogsManagement } from "./AuditLogsManagement";
 import { AdministratorManagement } from "./AdministratorManagement";
+import { CheckInManagement } from "./CheckInManagement";
 import type { AdminProfile, DashboardStatistics } from "./types";
 
 function friendlyRole(role: AdminProfile["role"]): string {
@@ -415,6 +416,12 @@ function AdminLayout({
             Seating
           </a>
           <a
+            className={location.pathname.startsWith("/admin/check-in") ? "is-active" : ""}
+            href="/admin/check-in"
+          >
+            Check-in
+          </a>
+          <a
             className={location.pathname.startsWith("/admin/reports") ? "is-active" : ""}
             href="/admin/reports"
           >
@@ -460,6 +467,8 @@ function AdminLayout({
           <ContentManagement accessToken={accessToken} role={profile.role} />
         ) : location.pathname.startsWith("/admin/seating") ? (
           <SeatingManagement accessToken={accessToken} role={profile.role} />
+        ) : location.pathname.startsWith("/admin/check-in") ? (
+          <CheckInManagement accessToken={accessToken} role={profile.role} />
         ) : location.pathname.startsWith("/admin/reports") ? (
           <ReportsManagement accessToken={accessToken} />
         ) : location.pathname.startsWith("/admin/audit-logs") ? (

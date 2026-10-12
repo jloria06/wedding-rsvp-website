@@ -221,6 +221,53 @@ def mark_rsvp_reminder_sent(
     return response
 
 
+@router.post(
+    "/{guest_id}/check-in",
+    response_model=AdminGuestUpdateResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Check in an attending guest",
+)
+def check_in_guest(
+    guest_id: int,
+    current_administrator: GuestManager,
+    database_session: DatabaseSession,
+) -> AdminGuestUpdateResponse:
+    response = AdminGuestManagementService(database_session).check_in_guest(guest_id)
+    AdminAuditService(database_session).record(
+        current_administrator,
+        action="guest.checked_in",
+        resource_type="guest",
+        resource_id=response.guest.id,
+        summary=f"Checked in {response.guest.full_name}.",
+        details={"checked_in_at": response.guest.checked_in_at.isoformat()},
+    )
+    database_session.commit()
+    return response
+
+
+@router.post(
+    "/{guest_id}/check-out",
+    response_model=AdminGuestUpdateResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Remove a guest check-in",
+)
+def check_out_guest(
+    guest_id: int,
+    current_administrator: GuestManager,
+    database_session: DatabaseSession,
+) -> AdminGuestUpdateResponse:
+    response = AdminGuestManagementService(database_session).check_out_guest(guest_id)
+    AdminAuditService(database_session).record(
+        current_administrator,
+        action="guest.checked_out",
+        resource_type="guest",
+        resource_id=response.guest.id,
+        summary=f"Removed check-in for {response.guest.full_name}.",
+    )
+    database_session.commit()
+    return response
+
+
 @router.delete(
     "/{guest_id}",
     response_model=AdminGuestDeleteResponse,

@@ -23,6 +23,7 @@ class AdminGuestListItem(BaseModel):
     invitation_sent_at: datetime | None
     last_rsvp_reminder_sent_at: datetime | None
     rsvp_reminder_count: int
+    checked_in_at: datetime | None
     created_at: datetime
 
 

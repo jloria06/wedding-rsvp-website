@@ -60,9 +60,33 @@ def test_guest_management_preserves_age_group_and_editable_details() -> None:
         guest.rsvp = RSVP(status=RSVPStatus.ATTENDING)
         session.flush()
 
+        checked_in = service.check_in_guest(created.guest.id)
+        assert checked_in.guest.checked_in_at is not None
+
+        checked_out = service.check_out_guest(created.guest.id)
+        assert checked_out.guest.checked_in_at is None
+
         with pytest.raises(AuthorizationError):
             service.mark_rsvp_reminder_sent(created.guest.id)
         assert service.list_guests().total == 1
+
+
+def test_check_in_rejects_guest_without_attending_rsvp() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        service = AdminGuestManagementService(session)
+        created = service.create_guest(
+            AdminGuestCreateRequest(
+                invitation_code="PENDING-GUEST",
+                first_name="Pending",
+                last_name="Guest",
+            )
+        )
+
+        with pytest.raises(AuthorizationError, match="attending"):
+            service.check_in_guest(created.guest.id)
 
 
 def test_guest_csv_import_and_export_reports_invalid_rows() -> None:

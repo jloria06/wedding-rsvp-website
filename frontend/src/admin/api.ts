@@ -138,6 +138,26 @@ export function markAdministratorRsvpReminderSent(
   );
 }
 
+export function checkInAdministratorGuest(
+  accessToken: string,
+  guestId: number,
+): Promise<GuestMutationResponse> {
+  return apiRequest<GuestMutationResponse>(`/admin/guests/${guestId}/check-in`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function checkOutAdministratorGuest(
+  accessToken: string,
+  guestId: number,
+): Promise<GuestMutationResponse> {
+  return apiRequest<GuestMutationResponse>(`/admin/guests/${guestId}/check-out`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
 export function importAdministratorGuests(
   accessToken: string,
   file: File,

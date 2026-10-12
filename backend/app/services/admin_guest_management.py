@@ -193,6 +193,31 @@ class AdminGuestManagementService:
             guest=self._build_guest_item(guest),
         )
 
+    def check_in_guest(self, guest_id: int) -> AdminGuestUpdateResponse:
+        guest = self.guest_repository.get_by_id(guest_id)
+        if guest is None:
+            raise AuthorizationError("Guest not found.")
+        if guest.rsvp is None or guest.rsvp.status != RSVPStatus.ATTENDING:
+            raise AuthorizationError("Only attending guests can be checked in.")
+        if guest.checked_in_at is None:
+            guest.checked_in_at = datetime.now(UTC)
+            self.database_session.flush()
+        return AdminGuestUpdateResponse(
+            message="Guest checked in successfully.",
+            guest=self._build_guest_item(guest),
+        )
+
+    def check_out_guest(self, guest_id: int) -> AdminGuestUpdateResponse:
+        guest = self.guest_repository.get_by_id(guest_id)
+        if guest is None:
+            raise AuthorizationError("Guest not found.")
+        guest.checked_in_at = None
+        self.database_session.flush()
+        return AdminGuestUpdateResponse(
+            message="Guest check-in removed.",
+            guest=self._build_guest_item(guest),
+        )
+
     def import_csv(self, content: str) -> AdminGuestImportResponse:
         reader = csv.DictReader(io.StringIO(content))
 
@@ -348,5 +373,6 @@ class AdminGuestManagementService:
             invitation_sent_at=guest.invitation_sent_at,
             last_rsvp_reminder_sent_at=guest.last_rsvp_reminder_sent_at,
             rsvp_reminder_count=guest.rsvp_reminder_count,
+            checked_in_at=guest.checked_in_at,
             created_at=guest.created_at,
         )

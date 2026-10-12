@@ -617,3 +617,19 @@
 .admin-password-reset { width:min(100%,34rem); }
 .admin-guest-editor > form > small { margin-top:.75rem; color:var(--admin-muted); }
 @media (max-width:900px) { .admin-administrator-filters { grid-template-columns:1fr; } }
+
+.admin-checkin { display:grid; gap:1.1rem; }
+.admin-checkin-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.8rem; }
+.admin-checkin-summary article { padding:1rem 1.1rem; border:1px solid var(--admin-border); border-radius:.9rem; background:var(--admin-ivory); }
+.admin-checkin-summary span, .admin-checkin-summary strong { display:block; }
+.admin-checkin-summary span { color:var(--admin-muted); font-size:.7rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
+.admin-checkin-summary strong { margin-top:.45rem; font-family:"Cormorant Garamond",Georgia,serif; font-size:2rem; font-weight:600; }
+.admin-checkin-filters { display:grid; grid-template-columns:minmax(18rem,1fr) minmax(13rem,.35fr); gap:.75rem; }
+.admin-checkin-filters input, .admin-checkin-filters select { width:100%; min-height:2.75rem; padding:.65rem .8rem; border:1px solid var(--admin-border); border-radius:.65rem; background:#fff; color:var(--admin-ink); font:inherit; }
+.admin-checkin-table { min-width:58rem; }
+.admin-checkin-table tr.is-checked-in { background:#f4fbf6; }
+.admin-checkin-table td:nth-child(4) small { display:block; margin-top:.35rem; }
+.admin-checkin-button, .admin-checkout-button { min-width:7.5rem; padding:.6rem .8rem; border:1px solid var(--admin-purple-dark); border-radius:.55rem; background:var(--admin-purple-dark); color:#fff; cursor:pointer; font-weight:700; }
+.admin-checkout-button { border-color:var(--admin-border); background:#fff; color:var(--admin-purple-dark); }
+.admin-checkin-button:disabled, .admin-checkout-button:disabled { cursor:not-allowed; opacity:.55; }
+@media (max-width:760px) { .admin-checkin-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .admin-checkin-filters { grid-template-columns:1fr; } }

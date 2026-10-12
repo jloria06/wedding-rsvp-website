@@ -99,6 +99,7 @@ export type AdminGuest = {
   invitation_sent_at: string | null;
   last_rsvp_reminder_sent_at: string | null;
   rsvp_reminder_count: number;
+  checked_in_at: string | null;
   created_at: string;
 };
 
