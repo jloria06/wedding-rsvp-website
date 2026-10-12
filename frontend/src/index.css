@@ -30,7 +30,7 @@
 
 html {
   scroll-behavior: smooth;
-  background: var(--lavender-50);
+  background: #e8ddf0;
 }
 
 body {
@@ -39,7 +39,7 @@ body {
   min-height: 100vh;
   font-family: "Montserrat", sans-serif;
   color: var(--ink);
-  background: var(--lavender-50);
+  background: linear-gradient(135deg, #eee3f4 0%, #e8ddf0 48%, #f1e5ee 100%);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -2754,7 +2754,7 @@ code {
 
 .rsvp-section {
   padding: 110px 24px 130px;
-  background: linear-gradient(180deg, var(--pink-50), var(--lavender-50));
+  background: linear-gradient(180deg, #f1e5ee 0%, #e8ddf0 52%, #eee3f4 100%);
 }
 .rsvp-deadline {
   margin: 16px auto 0 !important;

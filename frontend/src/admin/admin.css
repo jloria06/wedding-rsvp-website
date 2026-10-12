@@ -153,7 +153,14 @@
 .admin-dashboard {
   display: grid;
   grid-template-columns: 16rem minmax(0, 1fr);
-  background: #f7f3f7;
+  background:
+    linear-gradient(
+      135deg,
+      #eee3f4 0%,
+      #e8ddf0 48%,
+      #f1e5ee 100%
+    );
+  background-attachment: fixed;
 }
 
 .admin-sidebar {
