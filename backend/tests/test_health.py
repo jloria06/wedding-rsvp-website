@@ -5,6 +5,20 @@ from app.main import app
 client = TestClient(app)
 
 
+def test_liveness_endpoint_does_not_require_database() -> None:
+    response = client.get("/api/health/live")
+
+    assert response.status_code == 200
+
+    payload = response.json()
+
+    assert payload["success"] is True
+    assert payload["status"] == "healthy"
+    assert payload["service"] == "Wedding RSVP API"
+    assert payload["environment"] == "development"
+    assert "database" not in payload
+
+
 def test_health_endpoint_returns_success() -> None:
     response = client.get("/api/health")
 

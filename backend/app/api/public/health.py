@@ -22,6 +22,20 @@ DatabaseSession = Annotated[
 
 
 @router.get(
+    "/live",
+    summary="Check API liveness",
+)
+def check_liveness() -> dict[str, Any]:
+    return {
+        "success": True,
+        "status": "healthy",
+        "service": settings.app_name,
+        "environment": settings.app_env,
+        "timestamp": datetime.now(UTC).isoformat(),
+    }
+
+
+@router.get(
     "",
     summary="Check API and database health",
 )

@@ -5,7 +5,11 @@ Configure the existing Render web service with these values:
 - Root Directory: `backend`
 - Build Command: `pip install -r requirements.txt`
 - Start Command: `bash scripts/start-production.sh`
-- Health Check Path: `/api/health`
+- Health Check Path: `/api/health/live`
+
+The liveness endpoint confirms that the API process can respond without waiting
+for a database query. Use `/api/health` when you want to verify both the API and
+its database connection.
 
 The startup script runs `alembic upgrade head` before starting Uvicorn. Alembic
 upgrades are idempotent, so every deployment safely applies only migrations that
