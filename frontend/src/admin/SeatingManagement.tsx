@@ -222,7 +222,7 @@ export function SeatingManagement({
             <h3 id="unassigned-title">Unassigned parties</h3>
             <span>{seating?.unassigned_parties.length ?? 0} parties</span>
           </div>
-          <input className="admin-seating-search" type="search" placeholder="Search guest, code, or household" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <input className="admin-seating-search" type="search" placeholder="Search guest, code, or guest group" value={search} onChange={(event) => setSearch(event.target.value)} />
           <div className="admin-unassigned-list">
             {unassignedParties.map((party) => (
               <article key={party.guest_id}>

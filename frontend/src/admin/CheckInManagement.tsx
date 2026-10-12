@@ -196,7 +196,7 @@ export function CheckInManagement({
       {remainingCapacity < 0 ? <p className="admin-capacity-warning" role="alert">Confirmed attendance is {Math.abs(remainingCapacity)} people above the 150-person venue capacity.</p> : null}
 
       <div className="admin-checkin-filters">
-        <input aria-label="Search attending guests" placeholder="Search name, invitation code, or household" value={query} onChange={(event) => setQuery(event.target.value)} />
+        <input aria-label="Search attending guests" placeholder="Search name, invitation code, or guest group" value={query} onChange={(event) => setQuery(event.target.value)} />
         <select aria-label="Filter check-in status" value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)}>
           <option value="all">All attending guests</option>
           <option value="waiting">Waiting to check in</option>
@@ -207,7 +207,7 @@ export function CheckInManagement({
       {errorMessage ? <p className="admin-error" role="alert">{errorMessage}</p> : null}
       <div className="admin-table-wrap">
         <table className="admin-guest-table admin-checkin-table">
-          <thead><tr><th>Guest</th><th>Invitation</th><th>Household</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>Guest</th><th>Invitation</th><th>Guest group</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>
             {isLoading ? <tr><td colSpan={5} className="admin-table-message">Loading attending guests...</td></tr> : null}
             {!isLoading && filteredGuests.length === 0 ? <tr><td colSpan={5} className="admin-table-message">No attending guests match these filters.</td></tr> : null}
@@ -244,7 +244,7 @@ export function CheckInManagement({
         <div className="admin-editor-backdrop" role="presentation">
           <section className="admin-qr-dialog admin-qr-confirm" role="dialog" aria-modal="true" aria-labelledby="qr-confirm-title">
             <header><div><p className="admin-status-label">Invitation found</p><h3 id="qr-confirm-title">{scannedGuest.full_name}</h3></div><button type="button" onClick={() => setScannedGuest(null)}>Close</button></header>
-            <dl><div><dt>Invitation</dt><dd>{scannedGuest.invitation_code}</dd></div><div><dt>Household</dt><dd>{scannedGuest.household_name ?? "None"}</dd></div><div><dt>Party size</dt><dd>{1 + scannedGuest.companion_count}</dd></div><div><dt>Status</dt><dd>{scannedGuest.checked_in_at ? `${1 + scannedGuest.checked_in_companion_count} arrived` : "Waiting"}</dd></div></dl>
+            <dl><div><dt>Invitation</dt><dd>{scannedGuest.invitation_code}</dd></div><div><dt>Guest group</dt><dd>{scannedGuest.household_name ?? "Unassigned"}</dd></div><div><dt>Party size</dt><dd>{1 + scannedGuest.companion_count}</dd></div><div><dt>Status</dt><dd>{scannedGuest.checked_in_at ? `${1 + scannedGuest.checked_in_companion_count} arrived` : "Waiting"}</dd></div></dl>
             <p className="admin-qr-message">{scanMessage}</p>
             {scannedGuest.companion_count > 0 ? <label className="admin-party-arrivals">Companions arrived<select value={companionArrivalCount} onChange={(event) => setCompanionArrivalCount(Number(event.target.value))}>{Array.from({ length: scannedGuest.companion_count + 1 }, (_, count) => <option key={count} value={count}>{count}</option>)}</select></label> : null}
             <button className="admin-checkin-button" type="button" disabled={role === "viewer" || busyGuestId === scannedGuest.id} onClick={() => void savePartyArrival(scannedGuest)}>{busyGuestId === scannedGuest.id ? "Saving..." : scannedGuest.checked_in_at ? "Update party arrival" : `Confirm ${1 + companionArrivalCount} ${1 + companionArrivalCount === 1 ? "person" : "people"}`}</button>

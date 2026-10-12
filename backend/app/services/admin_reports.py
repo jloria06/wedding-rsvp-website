@@ -126,7 +126,7 @@ class AdminReportsService:
             [
                 "Invitation Code",
                 "Guest",
-                "Household",
+                "Guest Group",
                 "Guest Status",
                 "RSVP Status",
                 "Attendance",

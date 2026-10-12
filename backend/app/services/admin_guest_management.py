@@ -255,7 +255,7 @@ class AdminGuestManagementService:
                     last_name=last_name,
                     email=row.get("email") or None,
                     phone_number=row.get("phone_number") or None,
-                    household_name=row.get("household_name") or None,
+                    household_name=row.get("guest_group") or row.get("household_name") or None,
                     maximum_companions=int(row.get("maximum_companions") or 0),
                     age_group=row.get("age_group") or "adult",
                     is_primary_guest=self._parse_boolean(
@@ -288,7 +288,7 @@ class AdminGuestManagementService:
                 "last_name",
                 "email",
                 "phone_number",
-                "household_name",
+                "guest_group",
                 "age_group",
                 "is_primary_guest",
                 "guest_status",
@@ -336,7 +336,7 @@ class AdminGuestManagementService:
             [
                 "invitation_code",
                 "guest_name",
-                "household_name",
+                "guest_group",
                 "expected_party_size",
                 "primary_guest_checked_in",
                 "companions_checked_in",

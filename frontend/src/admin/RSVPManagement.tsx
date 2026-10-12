@@ -166,7 +166,7 @@ export function RSVPManagement({ accessToken, role }: { accessToken: string; rol
         <button type="button" onClick={() => void exportCsv()} disabled={isExporting}>{isExporting ? "Exporting..." : "Export CSV"}</button>
       </div>
       <div className="admin-guest-filters admin-rsvp-filters">
-        <input aria-label="Search RSVPs" placeholder="Search guest, code, or household" value={search} onChange={(event) => setSearch(event.target.value)} />
+        <input aria-label="Search RSVPs" placeholder="Search guest, code, or guest group" value={search} onChange={(event) => setSearch(event.target.value)} />
         <select aria-label="Filter RSVP status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as RSVPStatus | "all")}><option value="all">All RSVP statuses</option><option value="pending">Pending</option><option value="attending">Attending</option><option value="not_attending">Declined</option></select>
       </div>
       {errorMessage ? <p className="admin-error" role="alert">{errorMessage}</p> : null}

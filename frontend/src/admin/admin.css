@@ -399,7 +399,7 @@
 .admin-section-actions button:last-child { border-color:var(--admin-purple-dark); background:var(--admin-purple-dark); color:#fff; }
 .admin-section-actions button:disabled { cursor:wait; opacity:.6; }
 .admin-hidden-input { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
-.admin-guest-filters { display:grid; grid-template-columns:minmax(16rem,1fr) repeat(3,minmax(10rem,.35fr)); gap:.75rem; margin-bottom:1rem; }
+.admin-guest-filters { display:grid; grid-template-columns:minmax(16rem,1fr) repeat(4,minmax(9rem,.35fr)); gap:.75rem; margin-bottom:1rem; }
 .admin-guest-filters input, .admin-guest-filters select, .admin-guest-editor input, .admin-guest-editor select { width:100%; min-height:2.75rem; padding:.65rem .8rem; border:1px solid var(--admin-border); border-radius:.65rem; background:#fff; color:var(--admin-ink); }
 .admin-table-wrap { overflow-x:auto; border:1px solid var(--admin-border); border-radius:1rem; background:var(--admin-ivory); }
 .admin-guest-table { width:100%; border-collapse:collapse; min-width:60rem; }

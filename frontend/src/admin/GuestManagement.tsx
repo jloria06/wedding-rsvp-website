@@ -29,6 +29,7 @@ import type {
   GuestUpdate,
   RSVPStatus,
 } from "./types";
+import { guestGroups } from "./guestGroups";
 
 type GuestDraft = {
   invitation_code: string;
@@ -110,6 +111,7 @@ export function GuestManagement({
   const [statusFilter, setStatusFilter] = useState<GuestStatus | "all">("all");
   const [rsvpFilter, setRsvpFilter] = useState<RSVPStatus | "pending" | "all">("all");
   const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>("all");
+  const [groupFilter, setGroupFilter] = useState("all");
   const [editingGuest, setEditingGuest] = useState<AdminGuest | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [draft, setDraft] = useState<GuestDraft>(emptyDraft);
@@ -159,9 +161,18 @@ export function GuestManagement({
         || (deliveryFilter === "reminded"
           && normalizedRsvp === "pending"
           && Boolean(guest.last_rsvp_reminder_sent_at));
-      return matchesSearch && matchesStatus && matchesRsvp && matchesDelivery;
+      const matchesGroup = groupFilter === "all"
+        || (groupFilter === "unassigned" ? !guest.household_name : guest.household_name === groupFilter);
+      return matchesSearch && matchesStatus && matchesRsvp && matchesDelivery && matchesGroup;
     });
-  }, [deliveryFilter, guests, rsvpFilter, search, statusFilter]);
+  }, [deliveryFilter, groupFilter, guests, rsvpFilter, search, statusFilter]);
+
+  const groupOptions = useMemo(() => {
+    const values = new Set<string>(guestGroups);
+    guests.forEach((guest) => { if (guest.household_name) values.add(guest.household_name); });
+    if (draft.household_name) values.add(draft.household_name);
+    return Array.from(values);
+  }, [draft.household_name, guests]);
 
   function openCreate(): void {
     setEditingGuest(null);
@@ -408,7 +419,8 @@ export function GuestManagement({
       </div>
 
       <div className="admin-guest-filters">
-        <input aria-label="Search guests" placeholder="Search name, code, email, or household" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input aria-label="Search guests" placeholder="Search name, code, email, or guest group" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select aria-label="Filter guest group" value={groupFilter} onChange={(e) => setGroupFilter(e.target.value)}><option value="all">All guest groups</option><option value="unassigned">Unassigned</option>{groupOptions.map((group) => <option key={group} value={group}>{group}</option>)}</select>
         <select aria-label="Filter guest status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as GuestStatus | "all")}><option value="all">All guest statuses</option><option value="invited">Invited</option><option value="verified">Verified</option><option value="blocked">Blocked</option></select>
         <select aria-label="Filter RSVP status" value={rsvpFilter} onChange={(e) => setRsvpFilter(e.target.value as RSVPStatus | "pending" | "all")}><option value="all">All RSVP statuses</option><option value="pending">Pending</option><option value="attending">Attending</option><option value="not_attending">Declined</option></select>
         <select aria-label="Filter invitation delivery" value={deliveryFilter} onChange={(e) => setDeliveryFilter(e.target.value as DeliveryFilter)}><option value="all">All delivery statuses</option><option value="sent">Invitation sent</option><option value="not_sent">Invitation not sent</option><option value="reminder_needed">Pending: reminder needed</option><option value="reminded">Pending: reminded</option></select>
@@ -511,7 +523,7 @@ export function GuestManagement({
 
       {editorOpen ? <div className="admin-editor-backdrop"><section className="admin-guest-editor" aria-labelledby="guest-editor-title"><div className="admin-editor-header"><div><p className="admin-status-label">{editingGuest ? "Edit invitation" : "New invitation"}</p><h2 id="guest-editor-title">{editingGuest ? editingGuest.full_name : "Add guest"}</h2></div><button type="button" onClick={closeEditor}>Close</button></div><form onSubmit={saveGuest}>
         <label>Invitation code<input value={draft.invitation_code} onChange={(e) => setDraft({...draft, invitation_code:e.target.value.toUpperCase()})} disabled={Boolean(editingGuest)} minLength={4} required /></label>
-        <div className="admin-form-grid"><label>First name<input value={draft.first_name} onChange={(e) => setDraft({...draft, first_name:e.target.value})} required /></label><label>Middle name<input value={draft.middle_name} onChange={(e) => setDraft({...draft, middle_name:e.target.value})} /></label><label>Last name<input value={draft.last_name} onChange={(e) => setDraft({...draft, last_name:e.target.value})} required /></label><label>Email<input type="email" value={draft.email} onChange={(e) => setDraft({...draft, email:e.target.value})} /></label><label>Phone<input value={draft.phone_number} onChange={(e) => setDraft({...draft, phone_number:e.target.value})} /></label><label>Household<input value={draft.household_name} onChange={(e) => setDraft({...draft, household_name:e.target.value})} /></label><label>Companion allowance<input type="number" min="0" max="20" value={draft.maximum_companions} onChange={(e) => setDraft({...draft, maximum_companions:e.target.value})} required /></label><label>Age group<select value={draft.age_group} onChange={(e) => setDraft({...draft, age_group:e.target.value as AgeGroup})}><option value="adult">Adult</option><option value="child">Child</option></select></label>{editingGuest ? <label>Guest status<select value={draft.status} onChange={(e) => setDraft({...draft, status:e.target.value as GuestStatus})}><option value="invited">Invited</option><option value="verified">Verified</option><option value="blocked">Blocked</option></select></label> : null}</div>
+        <div className="admin-form-grid"><label>First name<input value={draft.first_name} onChange={(e) => setDraft({...draft, first_name:e.target.value})} required /></label><label>Middle name<input value={draft.middle_name} onChange={(e) => setDraft({...draft, middle_name:e.target.value})} /></label><label>Last name<input value={draft.last_name} onChange={(e) => setDraft({...draft, last_name:e.target.value})} required /></label><label>Email<input type="email" value={draft.email} onChange={(e) => setDraft({...draft, email:e.target.value})} /></label><label>Phone<input value={draft.phone_number} onChange={(e) => setDraft({...draft, phone_number:e.target.value})} /></label><label>Guest group<select value={draft.household_name} onChange={(e) => setDraft({...draft, household_name:e.target.value})}><option value="">Unassigned</option>{groupOptions.map((group) => <option key={group} value={group}>{group}</option>)}</select></label><label>Companion allowance<input type="number" min="0" max="20" value={draft.maximum_companions} onChange={(e) => setDraft({...draft, maximum_companions:e.target.value})} required /></label><label>Age group<select value={draft.age_group} onChange={(e) => setDraft({...draft, age_group:e.target.value as AgeGroup})}><option value="adult">Adult</option><option value="child">Child</option></select></label>{editingGuest ? <label>Guest status<select value={draft.status} onChange={(e) => setDraft({...draft, status:e.target.value as GuestStatus})}><option value="invited">Invited</option><option value="verified">Verified</option><option value="blocked">Blocked</option></select></label> : null}</div>
         <label className="admin-checkbox"><input type="checkbox" checked={draft.is_primary_guest} onChange={(e) => setDraft({...draft, is_primary_guest:e.target.checked})} />Primary guest</label>
         <div className="admin-editor-actions"><button type="button" onClick={closeEditor}>Cancel</button><button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save guest"}</button></div>
       </form></section></div> : null}

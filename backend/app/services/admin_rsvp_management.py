@@ -107,7 +107,7 @@ class AdminRSVPManagementService:
             [
                 "Invitation Code",
                 "Guest",
-                "Household",
+                "Guest Group",
                 "RSVP Status",
                 "Attendance",
                 "Guest Meal",
