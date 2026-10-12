@@ -73,8 +73,27 @@ function invitationUrl(invitationCode: string): string {
   return url.toString();
 }
 
+function invitationMessage(guest: AdminGuest): string {
+  return `Hi ${guest.first_name}, we are excited to invite you to John Paul and Joyce's wedding. Please view your invitation and RSVP using your personal link: ${invitationUrl(guest.invitation_code)}`;
+}
+
 function reminderMessage(guest: AdminGuest): string {
   return `Hi ${guest.first_name}, this is a friendly reminder to send your wedding RSVP. Please respond using your personal link: ${invitationUrl(guest.invitation_code)}`;
+}
+
+function emailComposeUrl(
+  email: string,
+  subject: string,
+  message: string,
+): string {
+  return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+}
+
+function whatsappComposeUrl(phoneNumber: string, message: string): string {
+  let number = phoneNumber.replace(/\D/g, "");
+  if (number.startsWith("00")) number = number.slice(2);
+  else if (number.startsWith("0")) number = `63${number.slice(1)}`;
+  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 }
 
 export function GuestManagement({
@@ -230,6 +249,17 @@ export function GuestManagement({
       setInvitationFeedback("Invitation link copied.");
     } catch {
       setInvitationFeedback("Copy failed. Select and copy the link below.");
+    }
+  }
+
+  async function copyInvitationMessage(): Promise<void> {
+    if (!invitationGuest) return;
+
+    try {
+      await navigator.clipboard.writeText(invitationMessage(invitationGuest));
+      setInvitationFeedback("Invitation message copied.");
+    } catch {
+      setInvitationFeedback("Copy failed. Select and copy the invitation below.");
     }
   }
 
@@ -531,6 +561,51 @@ export function GuestManagement({
               </div>
             </div>
 
+            <div className="admin-communication-panel">
+              <div>
+                <span>Invitation message</span>
+                <p>Open a prefilled message, then mark the invitation as sent after sending it.</p>
+              </div>
+              <textarea
+                aria-label="Personalized invitation message"
+                readOnly
+                rows={4}
+                value={invitationMessage(invitationGuest)}
+                onFocus={(event) => event.currentTarget.select()}
+              />
+              <div className="admin-communication-actions">
+                <button type="button" onClick={() => void copyInvitationMessage()}>
+                  Copy invitation
+                </button>
+                {invitationGuest.email ? (
+                  <a
+                    href={emailComposeUrl(
+                      invitationGuest.email,
+                      "John Paul & Joyce Wedding Invitation",
+                      invitationMessage(invitationGuest),
+                    )}
+                  >
+                    Email invitation
+                  </a>
+                ) : null}
+                {invitationGuest.phone_number ? (
+                  <a
+                    href={whatsappComposeUrl(
+                      invitationGuest.phone_number,
+                      invitationMessage(invitationGuest),
+                    )}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    WhatsApp invitation
+                  </a>
+                ) : null}
+              </div>
+              {!invitationGuest.email && !invitationGuest.phone_number ? (
+                <small>Add an email address or phone number to enable direct compose actions.</small>
+              ) : null}
+            </div>
+
             {(invitationGuest.rsvp_status ?? "pending") === "pending" ? (
               <div className="admin-reminder-panel">
                 <div>
@@ -552,6 +627,29 @@ export function GuestManagement({
                   <button type="button" onClick={() => void copyReminderMessage()}>
                     Copy reminder
                   </button>
+                  {invitationGuest.email ? (
+                    <a
+                      href={emailComposeUrl(
+                        invitationGuest.email,
+                        "Wedding RSVP Reminder",
+                        reminderMessage(invitationGuest),
+                      )}
+                    >
+                      Email reminder
+                    </a>
+                  ) : null}
+                  {invitationGuest.phone_number ? (
+                    <a
+                      href={whatsappComposeUrl(
+                        invitationGuest.phone_number,
+                        reminderMessage(invitationGuest),
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      WhatsApp reminder
+                    </a>
+                  ) : null}
                   {canManage ? (
                     <button
                       type="button"
