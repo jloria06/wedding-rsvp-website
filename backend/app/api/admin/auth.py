@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import AuthenticationError
+from app.core.rate_limiting import enforce_admin_login_rate_limit
 from app.database.session import get_database_session
 from app.schemas import (
     AdministratorLoginRequest,
@@ -32,6 +33,7 @@ DatabaseSession = Annotated[
     response_model=AdministratorLoginResponse,
     status_code=status.HTTP_200_OK,
     summary="Authenticate an administrator",
+    dependencies=[Depends(enforce_admin_login_rate_limit)],
 )
 def login_administrator(
     request: AdministratorLoginRequest,

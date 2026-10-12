@@ -29,6 +29,7 @@ import { ReportsManagement } from "./ReportsManagement";
 import { AuditLogsManagement } from "./AuditLogsManagement";
 import { AdministratorManagement } from "./AdministratorManagement";
 import { CheckInManagement } from "./CheckInManagement";
+import { clearOfflineCheckInStorage } from "./offlineCheckInStorage";
 import type { AdminProfile, DashboardStatistics } from "./types";
 
 function friendlyRole(role: AdminProfile["role"]): string {
@@ -45,6 +46,7 @@ export function AdminApp() {
 
   const signOut = useCallback(() => {
     sessionStorage.removeItem(adminTokenStorageKey);
+    clearOfflineCheckInStorage();
     setAccessToken(null);
     setProfile(null);
     navigate("/admin/login", { replace: true });
@@ -67,6 +69,7 @@ export function AdminApp() {
       .catch(() => {
         if (!isActive) return;
         sessionStorage.removeItem(adminTokenStorageKey);
+        clearOfflineCheckInStorage();
         setAccessToken(null);
         setProfile(null);
       })

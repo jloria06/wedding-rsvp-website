@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from app.core.rate_limiting import enforce_rsvp_rate_limit
 from app.database.session import get_database_session
 from app.schemas import (
     RSVPSubmissionRequest,
@@ -26,6 +27,7 @@ DatabaseSession = Annotated[
     response_model=RSVPSubmissionResponse,
     status_code=status.HTTP_200_OK,
     summary="Submit or update a guest RSVP",
+    dependencies=[Depends(enforce_rsvp_rate_limit)],
 )
 def submit_guest_rsvp(
     request: RSVPSubmissionRequest,

@@ -9,10 +9,9 @@ import {
   listAdministratorGuests,
 } from "./api";
 import type { AdminGuest, AdminRole } from "./types";
+import { pendingCheckInsKey, rosterCacheKey } from "./offlineCheckInStorage";
 
 const VENUE_CAPACITY = 150;
-const ROSTER_CACHE_KEY = "wedding-rsvp-check-in-roster";
-const PENDING_CHECK_INS_KEY = "wedding-rsvp-pending-check-ins";
 
 type PendingCheckIn = {
   guestId: number;
@@ -46,7 +45,7 @@ export function CheckInManagement({
   accessToken: string;
   role: AdminRole;
 }) {
-  const [guests, setGuests] = useState<AdminGuest[]>(() => readStoredValue(ROSTER_CACHE_KEY, []));
+  const [guests, setGuests] = useState<AdminGuest[]>(() => readStoredValue(rosterCacheKey, []));
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "waiting" | "checked_in">("all");
   const [busyGuestId, setBusyGuestId] = useState<number | null>(null);
@@ -60,7 +59,7 @@ export function CheckInManagement({
   const [companionArrivalCount, setCompanionArrivalCount] = useState(0);
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [pendingCheckIns, setPendingCheckIns] = useState<PendingCheckIn[]>(() =>
-    readStoredValue(PENDING_CHECK_INS_KEY, []),
+    readStoredValue(pendingCheckInsKey, []),
   );
   const [isSyncing, setIsSyncing] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -71,11 +70,11 @@ export function CheckInManagement({
       .then((response) => {
         if (!isActive) return;
         setGuests(response.guests);
-        sessionStorage.setItem(ROSTER_CACHE_KEY, JSON.stringify(response.guests));
+        sessionStorage.setItem(rosterCacheKey, JSON.stringify(response.guests));
         setErrorMessage("");
       })
       .catch((error) => {
-        if (!isActive || readStoredValue<AdminGuest[]>(ROSTER_CACHE_KEY, []).length) return;
+        if (!isActive || readStoredValue<AdminGuest[]>(rosterCacheKey, []).length) return;
         setErrorMessage(error instanceof ApiError ? error.message : "Guest check-in list could not be loaded.");
       })
       .finally(() => {
@@ -100,7 +99,7 @@ export function CheckInManagement({
   const storeGuests = useCallback((update: (current: AdminGuest[]) => AdminGuest[]) => {
     setGuests((current) => {
       const updated = update(current);
-      sessionStorage.setItem(ROSTER_CACHE_KEY, JSON.stringify(updated));
+      sessionStorage.setItem(rosterCacheKey, JSON.stringify(updated));
       return updated;
     });
   }, []);
@@ -108,7 +107,7 @@ export function CheckInManagement({
   const storePendingCheckIns = useCallback((update: (current: PendingCheckIn[]) => PendingCheckIn[]) => {
     setPendingCheckIns((current) => {
       const updated = update(current);
-      sessionStorage.setItem(PENDING_CHECK_INS_KEY, JSON.stringify(updated));
+      sessionStorage.setItem(pendingCheckInsKey, JSON.stringify(updated));
       return updated;
     });
   }, []);

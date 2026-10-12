@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from app.core.rate_limiting import enforce_guest_verify_rate_limit
 from app.database.session import get_database_session
 from app.schemas import (
     GuestVerificationRequest,
@@ -26,6 +27,7 @@ DatabaseSession = Annotated[
     response_model=GuestVerificationResponse,
     status_code=status.HTTP_200_OK,
     summary="Verify a guest invitation code",
+    dependencies=[Depends(enforce_guest_verify_rate_limit)],
 )
 def verify_guest_invitation(
     request: GuestVerificationRequest,

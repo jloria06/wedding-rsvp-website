@@ -39,15 +39,18 @@ async def lifespan(application: FastAPI):
 
 
 def create_application() -> FastAPI:
+    if settings.is_production and "*" in settings.cors_origins:
+        raise RuntimeError("Production CORS origins must list explicit domains.")
+
     application = FastAPI(
         title=settings.app_name,
         version="0.1.0",
         description="Local Wedding RSVP backend API.",
         debug=settings.debug,
         lifespan=lifespan,
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url=None if settings.is_production else "/docs",
+        redoc_url=None if settings.is_production else "/redoc",
+        openapi_url=None if settings.is_production else "/openapi.json",
     )
 
     application.add_middleware(
