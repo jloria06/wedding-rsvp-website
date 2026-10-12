@@ -3414,7 +3414,11 @@ code {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background: var(--ivory) !important;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.52), transparent 34%),
+    radial-gradient(circle at 82% 78%, rgba(235, 200, 232, 0.24), transparent 38%),
+    linear-gradient(135deg, #f1e5ee 0%, #e8ddf0 50%, #eee3f4 100%)
+    !important;
 }
 
 .floral-section > * {
