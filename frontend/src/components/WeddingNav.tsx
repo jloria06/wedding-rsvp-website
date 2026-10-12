@@ -6,7 +6,7 @@ export function WeddingNav({ onRSVPClick }: WeddingNavProps) {
   return (
     <nav className="wedding-nav">
       <a href="#top" className="wedding-nav-brand">
-        JP &amp; J
+        JP &amp; Joyce
       </a>
 
       <div className="wedding-nav-links">

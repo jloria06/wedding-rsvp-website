@@ -1116,7 +1116,7 @@ function App() {
               href="#welcome"
               onClick={closeMobileMenu}
             >
-              JP <span>&</span> J
+              JP <span>&</span> Joyce
             </a>
 
             <button
