@@ -489,6 +489,7 @@
 .admin-content-card .admin-checkbox { display:flex; flex-direction:row; align-items:center; }
 .admin-content-card .admin-checkbox input { width:auto; }
 .admin-content-help { color:var(--admin-muted); font-size:.76rem; }
+.admin-rsvp-setting-note { margin:.75rem 0 0; padding:.75rem 1rem; border-radius:.7rem; background:#f4eef7; color:var(--admin-muted); font-size:.76rem; line-height:1.5; }
 .admin-content-add, .admin-content-remove { margin-top:1rem; padding:.55rem .75rem; border:1px solid var(--admin-border); border-radius:.55rem; background:#fff; color:var(--admin-purple-dark); cursor:pointer; font-weight:700; }
 .admin-content-remove { color:#8b2f3f; }
 .admin-feature-switches { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.5rem; }

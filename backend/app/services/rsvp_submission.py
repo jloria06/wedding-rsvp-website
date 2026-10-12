@@ -18,6 +18,7 @@ from app.schemas import (
     RSVPSubmissionRequest,
     RSVPSubmissionResponse,
 )
+from app.services.wedding_content import WeddingContentService
 
 
 class RSVPSubmissionService:
@@ -30,6 +31,14 @@ class RSVPSubmissionService:
         self,
         request: RSVPSubmissionRequest,
     ) -> RSVPSubmissionResponse:
+        wedding_content = WeddingContentService(
+            self.database_session
+        ).get_content()
+        if not wedding_content.rsvp_open:
+            raise AuthorizationError(
+                wedding_content.content.rsvp_closed_message,
+            )
+
         guest = self.guest_repository.get_by_invitation_code(request.invitation_code)
 
         if guest is None:

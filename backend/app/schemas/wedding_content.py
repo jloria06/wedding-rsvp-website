@@ -1,4 +1,7 @@
-from pydantic import BaseModel, ConfigDict, Field
+from datetime import date
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ContentModel(BaseModel):
@@ -100,6 +103,19 @@ class WeddingContentPayload(ContentModel):
     rsvp_deadline_display: str = Field(
         alias="rsvpDeadlineDisplay", min_length=1, max_length=150
     )
+    rsvp_mode: Literal["automatic", "open", "closed"] = Field(
+        alias="rsvpMode",
+        default="automatic",
+    )
+    rsvp_closed_message: str = Field(
+        alias="rsvpClosedMessage",
+        default=(
+            "RSVP submissions are now closed. Please contact the couple if you "
+            "need to update your response."
+        ),
+        min_length=1,
+        max_length=300,
+    )
     ceremony: VenueContent
     reception: VenueContent
     story_heading: str = Field(alias="storyHeading", max_length=300)
@@ -112,10 +128,21 @@ class WeddingContentPayload(ContentModel):
     gift: GiftContent
     features: FeatureSwitches
 
+    @field_validator("rsvp_deadline")
+    @classmethod
+    def validate_rsvp_deadline(cls, value: str) -> str:
+        if value:
+            try:
+                date.fromisoformat(value)
+            except ValueError as error:
+                raise ValueError("RSVP deadline must use YYYY-MM-DD format.") from error
+        return value
+
 
 class WeddingContentResponse(BaseModel):
     success: bool = True
     content: WeddingContentPayload
+    rsvp_open: bool = Field(alias="rsvpOpen")
 
 
 DEFAULT_WEDDING_CONTENT = WeddingContentPayload.model_validate(
@@ -149,6 +176,11 @@ DEFAULT_WEDDING_CONTENT = WeddingContentPayload.model_validate(
         "weddingDateDisplay": "Saturday · March 20, 2027",
         "rsvpDeadline": "",
         "rsvpDeadlineDisplay": "RSVP deadline to be announced",
+        "rsvpMode": "automatic",
+        "rsvpClosedMessage": (
+            "RSVP submissions are now closed. Please contact the couple if you "
+            "need to update your response."
+        ),
         "ceremony": {
             "name": "Diocesan Shrine and Parish of Saint Pio of Pietrelcina",
             "time": "4:00 PM",

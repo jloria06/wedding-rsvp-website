@@ -2915,6 +2915,33 @@ code {
   color: #874c6b;
 }
 
+.rsvp-closed {
+  padding: 20px 8px;
+  text-align: center;
+}
+.rsvp-closed > p:first-child {
+  margin: 0 0 10px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--violet);
+}
+.rsvp-closed h3 {
+  margin: 0 0 14px;
+  font-size: 2rem;
+}
+.rsvp-closed > p:last-of-type {
+  max-width: 34rem;
+  margin: 0 auto;
+}
+.rsvp-closed span {
+  display: block;
+  margin-top: 18px;
+  font-size: 0.78rem;
+  color: var(--violet-dark);
+}
+
 .rsvp-guest-summary {
   margin-bottom: 35px;
   padding-bottom: 28px;

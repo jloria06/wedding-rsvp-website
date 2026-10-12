@@ -1,3 +1,5 @@
+from datetime import UTC, date, datetime, timedelta, timezone
+
 from sqlalchemy.orm import Session
 
 from app.models import WeddingContent
@@ -10,6 +12,7 @@ from app.schemas.wedding_content import (
 
 class WeddingContentService:
     CONTENT_ID = 1
+    MANILA_TIMEZONE = timezone(timedelta(hours=8), name="Asia/Manila")
 
     def __init__(self, database_session: Session) -> None:
         self.database_session = database_session
@@ -44,7 +47,10 @@ class WeddingContentService:
                 merged_story_items.append(merged_item)
             merged["storyItems"] = merged_story_items
             content = WeddingContentPayload.model_validate(merged)
-        return WeddingContentResponse(content=content)
+        return WeddingContentResponse(
+            content=content,
+            rsvpOpen=self.is_rsvp_open(content),
+        )
 
     def update_content(
         self, content: WeddingContentPayload, administrator_id: int
@@ -62,4 +68,32 @@ class WeddingContentService:
             record.content = serialized
             record.updated_by_id = administrator_id
         self.database_session.flush()
-        return WeddingContentResponse(content=content)
+        return WeddingContentResponse(
+            content=content,
+            rsvpOpen=self.is_rsvp_open(content),
+        )
+
+    @classmethod
+    def is_rsvp_open(
+        cls,
+        content: WeddingContentPayload,
+        *,
+        now: datetime | None = None,
+    ) -> bool:
+        if content.rsvp_mode == "open":
+            return True
+        if content.rsvp_mode == "closed":
+            return False
+        if not content.rsvp_deadline:
+            return True
+
+        try:
+            deadline = date.fromisoformat(content.rsvp_deadline)
+        except ValueError:
+            return True
+
+        current_time = now or datetime.now(UTC)
+        if current_time.tzinfo is None:
+            current_time = current_time.replace(tzinfo=UTC)
+        current_date = current_time.astimezone(cls.MANILA_TIMEZONE).date()
+        return current_date <= deadline

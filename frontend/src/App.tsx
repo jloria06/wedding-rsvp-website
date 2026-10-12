@@ -31,6 +31,24 @@ type EntourageGroup = {
 
 const DEFAULT_WEDDING_CONFIG: ResolvedWeddingConfig = defaultWeddingContent;
 
+function isRsvpOpenFromContent(
+  content: Pick<WeddingContent, "rsvpMode" | "rsvpDeadline">,
+): boolean {
+  if (content.rsvpMode === "open") return true;
+  if (content.rsvpMode === "closed") return false;
+  if (!content.rsvpDeadline) return true;
+
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const today = `${values.year}-${values.month}-${values.day}`;
+  return today <= content.rsvpDeadline;
+}
+
 /* =========================================================
    FULL-WIDTH PHOTO DIVIDER
 
@@ -207,6 +225,9 @@ function App() {
   const [weddingConfig, setWeddingConfig] = useState<ResolvedWeddingConfig>(
     DEFAULT_WEDDING_CONFIG,
   );
+  const [rsvpOpen, setRsvpOpen] = useState(
+    isRsvpOpenFromContent(DEFAULT_WEDDING_CONFIG),
+  );
   const heroSlides = weddingConfig.heroImages.map(apiAssetUrl);
   const scrollDividerImages = weddingConfig.dividerImages.map(apiAssetUrl);
   const galleryItems = weddingConfig.galleryItems.filter((item) => item.visible);
@@ -350,11 +371,13 @@ function App() {
     async function loadWeddingConfig() {
       try {
         let incoming: WeddingConfig;
+        let serverRsvpOpen: boolean | undefined;
         try {
-          const response = await apiRequest<{ success: boolean; content: WeddingContent }>(
+          const response = await apiRequest<{ success: boolean; content: WeddingContent; rsvpOpen: boolean }>(
             "/wedding-content",
           );
           incoming = response.content;
+          serverRsvpOpen = response.rsvpOpen;
         } catch {
           const response = await fetch("/data/wedding-config.json", { cache: "no-store" });
           if (!response.ok) return;
@@ -364,6 +387,14 @@ function App() {
         if (cancelled) {
           return;
         }
+
+        const rsvpSettings = {
+          rsvpMode: incoming.rsvpMode ?? DEFAULT_WEDDING_CONFIG.rsvpMode,
+          rsvpDeadline: incoming.rsvpDeadline ?? DEFAULT_WEDDING_CONFIG.rsvpDeadline,
+        };
+        setRsvpOpen(
+          serverRsvpOpen ?? isRsvpOpenFromContent(rsvpSettings),
+        );
 
         setWeddingConfig({
           ...DEFAULT_WEDDING_CONFIG,
@@ -378,6 +409,10 @@ function App() {
           rsvpDeadlineDisplay:
             incoming.rsvpDeadlineDisplay ??
             DEFAULT_WEDDING_CONFIG.rsvpDeadlineDisplay,
+          rsvpMode: rsvpSettings.rsvpMode,
+          rsvpClosedMessage:
+            incoming.rsvpClosedMessage ??
+            DEFAULT_WEDDING_CONFIG.rsvpClosedMessage,
           gift: {
             gcash: {
               ...DEFAULT_WEDDING_CONFIG.gift.gcash,
@@ -1904,7 +1939,20 @@ function App() {
               <div className="rsvp-shell__ornament">♡</div>
 
               <div className="rsvp-section__card">
-                {!verifiedGuest ? (
+                {!rsvpOpen ? (
+                  <div className="rsvp-closed" role="status">
+                    <p>RSVP CLOSED</p>
+                    <h3>Thank you for your response.</h3>
+                    <p>{weddingConfig.rsvpClosedMessage}</p>
+                    {weddingConfig.rsvpDeadlineDisplay ? (
+                      <span>
+                        The RSVP deadline was {weddingConfig.rsvpDeadlineDisplay}.
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {rsvpOpen && !verifiedGuest ? (
                   <InvitationVerificationForm
                     onVerified={(guest, existingRSVP) => {
                       setVerifiedGuest(guest);
@@ -1914,7 +1962,7 @@ function App() {
                   />
                 ) : null}
 
-                {verifiedGuest && !rsvpResponse ? (
+                {rsvpOpen && verifiedGuest && !rsvpResponse ? (
                   <>
                     <div className="rsvp-guest-summary">
                       <p>WELCOME</p>
@@ -1940,7 +1988,7 @@ function App() {
                   </>
                 ) : null}
 
-                {rsvpResponse ? (
+                {rsvpOpen && rsvpResponse ? (
                   <div className="rsvp-confirmation rsvp-confirmation--success">
                     <div
                       className="rsvp-confirmation__sparkles"

@@ -29,7 +29,9 @@ def update_content(
     current_administrator: GuestManager,
     database_session: DatabaseSession,
 ) -> WeddingContentResponse:
-    response = WeddingContentService(database_session).update_content(
+    service = WeddingContentService(database_session)
+    previous = service.get_content().content
+    response = service.update_content(
         content, current_administrator.id
     )
     AdminAuditService(database_session).record(
@@ -38,6 +40,12 @@ def update_content(
         resource_type="wedding_content",
         resource_id=WeddingContentService.CONTENT_ID,
         summary="Updated the public wedding website content.",
+        details={
+            "rsvp_mode": content.rsvp_mode,
+            "previous_rsvp_mode": previous.rsvp_mode,
+            "rsvp_deadline": content.rsvp_deadline,
+            "previous_rsvp_deadline": previous.rsvp_deadline,
+        },
     )
     database_session.commit()
     return response

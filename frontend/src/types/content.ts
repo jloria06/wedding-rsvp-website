@@ -36,6 +36,8 @@ export type GiftMethodContent = {
   enabled: boolean;
 };
 
+export type RSVPMode = "automatic" | "open" | "closed";
+
 export type WeddingContent = {
   coverImage: string;
   portraitImage: string;
@@ -46,6 +48,8 @@ export type WeddingContent = {
   weddingDateDisplay: string;
   rsvpDeadline: string;
   rsvpDeadlineDisplay: string;
+  rsvpMode: RSVPMode;
+  rsvpClosedMessage: string;
   ceremony: VenueContent;
   reception: VenueContent;
   storyHeading: string;
@@ -75,6 +79,8 @@ export const defaultWeddingContent: WeddingContent = {
   weddingDateDisplay: "Saturday · March 20, 2027",
   rsvpDeadline: "",
   rsvpDeadlineDisplay: "RSVP deadline to be announced",
+  rsvpMode: "automatic",
+  rsvpClosedMessage: "RSVP submissions are now closed. Please contact the couple if you need to update your response.",
   ceremony: {
     name: "Diocesan Shrine and Parish of Saint Pio of Pietrelcina",
     time: "4:00 PM",
