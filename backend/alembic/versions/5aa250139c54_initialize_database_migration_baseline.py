@@ -1,7 +1,7 @@
 """initialize database migration baseline
 
 Revision ID: 5aa250139c54
-Revises: 
+Revises:
 Create Date: 2026-07-30 13:59:48.585004
 
 """

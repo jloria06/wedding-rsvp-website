@@ -1,8 +1,10 @@
 from fastapi.testclient import TestClient
 
+from app.core.config import get_settings
 from app.main import app
 
 client = TestClient(app)
+settings = get_settings()
 
 
 def test_liveness_endpoint_does_not_require_database() -> None:
@@ -15,7 +17,7 @@ def test_liveness_endpoint_does_not_require_database() -> None:
     assert payload["success"] is True
     assert payload["status"] == "healthy"
     assert payload["service"] == "Wedding RSVP API"
-    assert payload["environment"] == "development"
+    assert payload["environment"] == settings.app_env
     assert "database" not in payload
 
 
@@ -29,7 +31,7 @@ def test_health_endpoint_returns_success() -> None:
     assert payload["success"] is True
     assert payload["status"] == "healthy"
     assert payload["service"] == "Wedding RSVP API"
-    assert payload["environment"] == "development"
+    assert payload["environment"] == settings.app_env
 
 
 def test_health_endpoint_reports_database_connection() -> None:
@@ -39,8 +41,8 @@ def test_health_endpoint_reports_database_connection() -> None:
     database = payload["database"]
 
     assert database["status"] == "connected"
-    assert database["name"] == "wedding_rsvp_development"
-    assert database["account"] == "wedding_dev@localhost"
+    assert database["name"] == settings.database_name
+    assert database["account"].split("@", maxsplit=1)[0] == settings.database_user
     assert database["version"]
 
 

@@ -108,6 +108,6 @@ def test_report_csv_contains_invitation_and_table_details() -> None:
 
         content = AdminReportsService(session).export_csv()
 
-        assert "Invitation Code,Guest,Household" in content
+        assert "Invitation Code,Guest,Guest Group" in content
         assert "REPORT-CSV,CSV Guest,,verified,attending,reception_only,1" in content
         assert "Table CSV" in content
