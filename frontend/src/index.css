@@ -4449,3 +4449,87 @@ code {
     transition: none;
   }
 }
+
+/* =========================================================
+   STABLE STORY SLIDESHOW
+   The viewport stays fixed while each bordered photo fits in full.
+========================================================= */
+
+.story-card__image {
+  position: relative;
+  width: 100%;
+  height: clamp(400px, 48vw, 520px);
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  contain: layout;
+}
+
+.story-card__image img,
+.story-card:hover .story-card__image img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  border: 8px solid var(--white);
+  background: var(--white);
+  box-shadow: 0 18px 45px var(--shadow);
+  object-fit: contain;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: opacity 700ms ease;
+}
+
+.story-card__image img.is-active,
+.story-card:hover .story-card__image img.is-active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  animation: none;
+}
+
+.story-card__dots {
+  right: auto;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 820px) {
+  .story-card__image,
+  .story-card__image img {
+    min-height: 0;
+  }
+
+  .story-card__image {
+    height: clamp(380px, 110vw, 560px);
+  }
+}
+
+@media (max-width: 440px) {
+  .story-card__image {
+    height: clamp(340px, 118vw, 500px);
+  }
+
+  .story-card__image img,
+  .story-card:hover .story-card__image img {
+    border-width: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-card__image img {
+    transition: none;
+  }
+}
