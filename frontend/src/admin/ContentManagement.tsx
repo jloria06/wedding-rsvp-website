@@ -7,6 +7,32 @@ import { GalleryEditor } from "./GalleryEditor";
 import type { AdminRole } from "./types";
 
 const giftKeys = ["gcash", "maya", "bank"] as const;
+
+function serializeEntouragePeople(
+  people: WeddingContent["entourageGroups"][number]["people"],
+): string {
+  return people
+    .map((person) => person.role ? `${person.role} | ${person.name}` : person.name)
+    .join("\n");
+}
+
+function parseEntouragePeople(
+  value: string,
+): WeddingContent["entourageGroups"][number]["people"] {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const separatorIndex = line.indexOf("|");
+      if (separatorIndex < 0) return { role: "", name: line };
+      return {
+        role: line.slice(0, separatorIndex).trim(),
+        name: line.slice(separatorIndex + 1).trim(),
+      };
+    })
+    .filter((person) => person.name.length > 0);
+}
 const contentTabs = [
   ["settings", "Settings"],
   ["images", "Images"],
@@ -40,6 +66,7 @@ export function ContentManagement({
   const [storyUploadError, setStoryUploadError] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [entourageDrafts, setEntourageDrafts] = useState<string[]>([]);
   const canManage = role !== "viewer";
 
   useEffect(() => {
@@ -49,7 +76,7 @@ export function ContentManagement({
   useEffect(() => {
     let active = true;
     getAdministratorContent(accessToken)
-      .then((response) => { if (active) setContent(response.content); })
+      .then((response) => { if (active) { setContent(response.content); setEntourageDrafts(response.content.entourageGroups.map((group) => serializeEntouragePeople(group.people))); } })
       .catch((error) => { if (active) setErrorMessage(error instanceof ApiError ? error.message : "Wedding content could not be loaded."); })
       .finally(() => { if (active) setIsLoading(false); });
     return () => { active = false; };
@@ -61,8 +88,22 @@ export function ContentManagement({
     setErrorMessage("");
     setSuccessMessage("");
     try {
-      const response = await updateAdministratorContent(accessToken, content);
+      const contentToSave: WeddingContent = {
+        ...content,
+        entourageGroups: content.entourageGroups.map((group, index) => ({
+          ...group,
+          people: parseEntouragePeople(
+            entourageDrafts[index] ?? serializeEntouragePeople(group.people),
+          ),
+        })),
+      };
+      const response = await updateAdministratorContent(accessToken, contentToSave);
       setContent(response.content);
+      setEntourageDrafts(
+        response.content.entourageGroups.map((group) =>
+          serializeEntouragePeople(group.people),
+        ),
+      );
       setSuccessMessage("Wedding website content saved successfully.");
     } catch (error) {
       setErrorMessage(error instanceof ApiError ? error.message : "Wedding content could not be saved.");
@@ -193,8 +234,32 @@ export function ContentManagement({
         {activeSection === "entourage" ? (
         <ContentSection title="Entourage">
           <p className="admin-content-help">Add one person per line using <code>Role | Name</code>. The role may be left blank.</p>
-          {content.entourageGroups.map((group, index) => <fieldset key={index}><legend>Group {index + 1}</legend><label>Group title<input value={group.title} onChange={(event) => setContent({...content, entourageGroups:content.entourageGroups.map((entry, entryIndex) => entryIndex === index ? {...entry, title:event.target.value} : entry)})} disabled={!canManage} required /></label><label>People<textarea rows={5} value={group.people.map((person) => `${person.role} | ${person.name}`).join("\n")} onChange={(event) => setContent({...content, entourageGroups:content.entourageGroups.map((entry, entryIndex) => entryIndex === index ? {...entry, people:event.target.value.split("\n").filter(Boolean).map((line) => { const [role, ...name] = line.split("|"); return {role:role.trim(), name:name.join("|").trim() || role.trim()}; })} : entry)})} disabled={!canManage} /></label>{canManage ? <button className="admin-content-remove" type="button" onClick={() => setContent({...content, entourageGroups:content.entourageGroups.filter((_, entryIndex) => entryIndex !== index)})}>Remove group</button> : null}</fieldset>)}
-          {canManage ? <button className="admin-content-add" type="button" onClick={() => setContent({...content, entourageGroups:[...content.entourageGroups, {title:"New group", people:[]}]})}>Add entourage group</button> : null}
+          {content.entourageGroups.map((group, index) => (
+            <fieldset key={index}>
+              <legend>Group {index + 1}</legend>
+              <label>
+                Group title
+                <input
+                  value={group.title}
+                  onChange={(event) => setContent({...content, entourageGroups:content.entourageGroups.map((entry, entryIndex) => entryIndex === index ? {...entry, title:event.target.value} : entry)})}
+                  disabled={!canManage}
+                  required
+                />
+              </label>
+              <label>
+                People
+                <textarea
+                  rows={5}
+                  value={entourageDrafts[index] ?? serializeEntouragePeople(group.people)}
+                  onChange={(event) => setEntourageDrafts((current) => current.map((draft, draftIndex) => draftIndex === index ? event.target.value : draft))}
+                  disabled={!canManage}
+                  placeholder={"Maid of Honor | Juanita Cruz\nBest Man | Pedro Santos\nAna Reyes"}
+                />
+              </label>
+              {canManage ? <button className="admin-content-remove" type="button" onClick={() => { setContent({...content, entourageGroups:content.entourageGroups.filter((_, entryIndex) => entryIndex !== index)}); setEntourageDrafts((current) => current.filter((_, draftIndex) => draftIndex !== index)); }}>Remove group</button> : null}
+            </fieldset>
+          ))}
+          {canManage ? <button className="admin-content-add" type="button" onClick={() => { setContent({...content, entourageGroups:[...content.entourageGroups, {title:"New group", people:[]}]}); setEntourageDrafts((current) => [...current, ""]); }}>Add entourage group</button> : null}
         </ContentSection>
         ) : null}
 
