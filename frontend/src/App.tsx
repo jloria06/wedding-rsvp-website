@@ -32,6 +32,32 @@ type EntourageGroup = {
 
 const DEFAULT_WEDDING_CONFIG: ResolvedWeddingConfig = defaultWeddingContent;
 
+function getYouTubeVideoId(value: string): string {
+  const fallbackVideoId = "fu9yk7gCTbc";
+  const candidate = value.trim();
+
+  if (/^[a-zA-Z0-9_-]{11}$/.test(candidate)) return candidate;
+
+  try {
+    const url = new URL(candidate);
+    const hostname = url.hostname.replace(/^www\./, "");
+    if (hostname === "youtu.be") {
+      return url.pathname.split("/").filter(Boolean)[0] || fallbackVideoId;
+    }
+    if (hostname === "youtube.com" || hostname === "m.youtube.com") {
+      const pathParts = url.pathname.split("/").filter(Boolean);
+      if (["embed", "shorts", "live"].includes(pathParts[0])) {
+        return pathParts[1] || fallbackVideoId;
+      }
+      return url.searchParams.get("v") || fallbackVideoId;
+    }
+  } catch {
+    return fallbackVideoId;
+  }
+
+  return fallbackVideoId;
+}
+
 function isRsvpOpenFromContent(
   content: Pick<WeddingContent, "rsvpMode" | "rsvpDeadline">,
 ): boolean {
@@ -748,11 +774,11 @@ function App() {
 
     const sectionIds = [
       "welcome",
+      "moments",
       "story",
       "details",
       "entourage",
       "dresscode",
-      "moments",
       "rsvp",
     ];
 
@@ -1133,6 +1159,15 @@ function App() {
             </button>
 
             <div id="wedding-navigation-links" className="wedding-nav__links">
+              <a
+                className={
+                  activeSection === "moments" ? "is-active" : undefined
+                }
+                href="#moments"
+                onClick={closeMobileMenu}
+              >
+                Moments
+              </a>
               {weddingConfig.features.story ? <a
                 className={activeSection === "story" ? "is-active" : undefined}
                 href="#story"
@@ -1166,15 +1201,6 @@ function App() {
                 onClick={closeMobileMenu}
               >
                 Dress Code
-              </a>
-              <a
-                className={
-                  activeSection === "moments" ? "is-active" : undefined
-                }
-                href="#moments"
-                onClick={closeMobileMenu}
-              >
-                Moments
               </a>
               {weddingConfig.features.rsvp ? <a
                 className={activeSection === "rsvp" ? "is-active" : undefined}
@@ -1341,6 +1367,65 @@ function App() {
                   </div>
                 ))}
               </div>
+            </div>
+          </section>
+
+          {/* ===============================================
+              PART 09: OUR MOMENTS / YOUTUBE
+          =============================================== */}
+
+          <section id="moments" className="moments-section floral-section">
+            <div className="section-heading reveal-on-scroll reveal-heading">
+              <p>OUR MEMORIES</p>
+              <h2 className="script-heading">Our Moments</h2>
+              <span>
+                A collection of little moments, beautiful memories, and the
+                journey that brought us here.
+              </span>
+            </div>
+
+            <div className="moments-video reveal-on-scroll reveal-scale">
+              <div className="moments-video__frame">
+                <div className="moments-video__youtube">
+                  {!momentsVideoStarted ? (
+                    <button
+                      className="moments-video__start"
+                      type="button"
+                      onClick={playMomentsVideo}
+                      aria-label="Play John Paul and Joyce wedding video"
+                    >
+                      <img
+                        src={`https://img.youtube.com/vi/${getYouTubeVideoId(weddingConfig.momentsVideoUrl)}/maxresdefault.jpg`}
+                        alt="John Paul and Joyce Our Moments video"
+                      />
+                      <span className="moments-video__shade" />
+                      <span className="moments-video__play">▶</span>
+                      <span className="moments-video__play-text">
+                        Play Our Moments
+                      </span>
+                    </button>
+                  ) : (
+                    <iframe
+                      src={`https://www.youtube-nocookie.com/embed/${getYouTubeVideoId(weddingConfig.momentsVideoUrl)}?autoplay=1&rel=0&modestbranding=1`}
+                      title="John Paul and Joyce - Our Moments"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allowFullScreen
+                    />
+                  )}
+                </div>
+
+                <div className="moments-video__corner moments-video__corner--tl">
+                  ♡
+                </div>
+                <div className="moments-video__corner moments-video__corner--br">
+                  ♡
+                </div>
+              </div>
+
+              <p className="moments-video__caption">
+                Every love story is beautiful, but ours is our favorite.
+              </p>
             </div>
           </section>
 
@@ -1675,65 +1760,6 @@ function App() {
               </div>
               <p className="wedding-palette__note">
                 Violet · Lavender · Lilac · Blush · Soft Pink
-              </p>
-            </div>
-          </section>
-
-          {/* ===============================================
-              PART 09: OUR MOMENTS / YOUTUBE
-          =============================================== */}
-
-          <section id="moments" className="moments-section floral-section">
-            <div className="section-heading reveal-on-scroll reveal-heading">
-              <p>OUR MEMORIES</p>
-              <h2 className="script-heading">Our Moments</h2>
-              <span>
-                A collection of little moments, beautiful memories, and the
-                journey that brought us here.
-              </span>
-            </div>
-
-            <div className="moments-video reveal-on-scroll reveal-scale">
-              <div className="moments-video__frame">
-                <div className="moments-video__youtube">
-                  {!momentsVideoStarted ? (
-                    <button
-                      className="moments-video__start"
-                      type="button"
-                      onClick={playMomentsVideo}
-                      aria-label="Play John Paul and Joyce wedding video"
-                    >
-                      <img
-                        src="https://img.youtube.com/vi/fu9yk7gCTbc/maxresdefault.jpg"
-                        alt="John Paul and Joyce Our Moments video"
-                      />
-                      <span className="moments-video__shade" />
-                      <span className="moments-video__play">▶</span>
-                      <span className="moments-video__play-text">
-                        Play Our Moments
-                      </span>
-                    </button>
-                  ) : (
-                    <iframe
-                      src="https://www.youtube-nocookie.com/embed/fu9yk7gCTbc?autoplay=1&rel=0&modestbranding=1"
-                      title="John Paul and Joyce - Our Moments"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      allowFullScreen
-                    />
-                  )}
-                </div>
-
-                <div className="moments-video__corner moments-video__corner--tl">
-                  ♡
-                </div>
-                <div className="moments-video__corner moments-video__corner--br">
-                  ♡
-                </div>
-              </div>
-
-              <p className="moments-video__caption">
-                Every love story is beautiful, but ours is our favorite.
               </p>
             </div>
           </section>

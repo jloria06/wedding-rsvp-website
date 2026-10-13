@@ -116,6 +116,12 @@ class WeddingContentPayload(ContentModel):
         min_length=1,
         max_length=300,
     )
+    moments_video_url: str = Field(
+        alias="momentsVideoUrl",
+        default="https://www.youtube.com/watch?v=fu9yk7gCTbc",
+        min_length=1,
+        max_length=500,
+    )
     ceremony: VenueContent
     reception: VenueContent
     story_heading: str = Field(alias="storyHeading", max_length=300)
@@ -181,6 +187,7 @@ DEFAULT_WEDDING_CONTENT = WeddingContentPayload.model_validate(
             "RSVP submissions are now closed. Please contact the couple if you "
             "need to update your response."
         ),
+        "momentsVideoUrl": "https://www.youtube.com/watch?v=fu9yk7gCTbc",
         "ceremony": {
             "name": "Diocesan Shrine and Parish of Saint Pio of Pietrelcina",
             "time": "4:00 PM",

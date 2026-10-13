@@ -50,6 +50,7 @@ export type WeddingContent = {
   rsvpDeadlineDisplay: string;
   rsvpMode: RSVPMode;
   rsvpClosedMessage: string;
+  momentsVideoUrl: string;
   ceremony: VenueContent;
   reception: VenueContent;
   storyHeading: string;
@@ -81,6 +82,7 @@ export const defaultWeddingContent: WeddingContent = {
   rsvpDeadlineDisplay: "RSVP deadline to be announced",
   rsvpMode: "automatic",
   rsvpClosedMessage: "RSVP submissions are now closed. Please contact the couple if you need to update your response.",
+  momentsVideoUrl: "https://www.youtube.com/watch?v=fu9yk7gCTbc",
   ceremony: {
     name: "Diocesan Shrine and Parish of Saint Pio of Pietrelcina",
     time: "4:00 PM",

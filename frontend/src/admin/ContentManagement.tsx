@@ -13,6 +13,7 @@ const contentTabs = [
   ["gallery", "Gallery"],
   ["venues", "Venues"],
   ["story", "Story"],
+  ["moments", "Moments"],
   ["entourage", "Entourage"],
   ["gifts", "Gifts"],
   ["features", "Features"],
@@ -171,6 +172,13 @@ export function ContentManagement({
         {activeSection === "venues" ? (
         <ContentSection title="Venues">
           {(["ceremony", "reception"] as const).map((key) => <fieldset key={key}><legend>{key}</legend><ImageField label={`${key} background`} value={content[key].image} accessToken={accessToken} disabled={!canManage} onChange={(image) => setContent({...content, [key]:{...content[key], image}})} /><div className="admin-form-grid"><label>Name<input value={content[key].name} onChange={(event) => setContent({...content, [key]:{...content[key], name:event.target.value}})} disabled={!canManage} required /></label><label>Time<input value={content[key].time} onChange={(event) => setContent({...content, [key]:{...content[key], time:event.target.value}})} disabled={!canManage} required /></label><label>Address<input value={content[key].address} onChange={(event) => setContent({...content, [key]:{...content[key], address:event.target.value}})} disabled={!canManage} required /></label><label>Google Maps URL<input type="url" value={content[key].mapUrl} onChange={(event) => setContent({...content, [key]:{...content[key], mapUrl:event.target.value}})} disabled={!canManage} required /></label></div></fieldset>)}
+        </ContentSection>
+        ) : null}
+
+        {activeSection === "moments" ? (
+        <ContentSection title="Our Moments video">
+          <p className="admin-content-help">Paste a YouTube watch, share, Shorts, Live, or embed URL. The public website updates after you save.</p>
+          <label>YouTube video URL<input type="url" value={content.momentsVideoUrl} onChange={(event) => setContent({...content, momentsVideoUrl:event.target.value})} disabled={!canManage} placeholder="https://www.youtube.com/watch?v=..." maxLength={500} required /></label>
         </ContentSection>
         ) : null}
 

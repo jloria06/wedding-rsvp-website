@@ -22,6 +22,7 @@ def test_wedding_content_uses_defaults_and_persists_updates() -> None:
         assert initial.content.rsvp_mode == "automatic"
         assert initial.rsvp_open is True
         assert initial.content.cover_image == "/images/cover.jpg"
+        assert initial.content.moments_video_url.endswith("fu9yk7gCTbc")
         assert len(initial.content.hero_images) == 5
         assert len(initial.content.divider_images) == 5
         assert initial.content.divider_images[3:] == ["", ""]
@@ -32,6 +33,7 @@ def test_wedding_content_uses_defaults_and_persists_updates() -> None:
 
         updated_content = DEFAULT_WEDDING_CONTENT.model_copy(deep=True)
         updated_content.rsvp_deadline = "2027-02-20"
+        updated_content.moments_video_url = "https://youtu.be/abcdefghijk"
         updated_content.rsvp_deadline_display = "February 20, 2027"
         updated_content.features.gift = False
         updated_content.story_items[0].images = [
@@ -48,6 +50,7 @@ def test_wedding_content_uses_defaults_and_persists_updates() -> None:
         persisted = service.get_content()
 
         assert persisted.content.rsvp_deadline == "2027-02-20"
+        assert persisted.content.moments_video_url == "https://youtu.be/abcdefghijk"
         assert persisted.content.rsvp_deadline_display == "February 20, 2027"
         assert persisted.content.features.gift is False
         assert len(persisted.content.story_items[0].images) == 2
