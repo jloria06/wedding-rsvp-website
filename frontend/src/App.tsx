@@ -1500,16 +1500,12 @@ function App() {
 
             <div className="entourage-grid">
                 {entourageGroups.map((group) => {
-                  const wide =
-                    group.people.length >= 6 ||
-                    /principal|secondary/i.test(group.title);
 
                   return (
                     <article
                       key={group.title}
-                      className={`entourage-group reveal-on-scroll reveal-up${
-                        wide ? " entourage-group--wide" : ""
-                      }`}
+                      className="entourage-group reveal-on-scroll reveal-up"
+
                     >
                       <h3>{group.title}</h3>
 
