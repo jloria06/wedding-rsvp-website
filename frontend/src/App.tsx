@@ -600,7 +600,7 @@ function App() {
     return () => {
       observer.disconnect();
     };
-  }, [invitationOpened, entourageLoading, siteReady]);
+  }, [invitationOpened, siteReady]);
 
   /* =======================================================
      PHOTO LIGHTBOX KEYBOARD CONTROLS
