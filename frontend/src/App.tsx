@@ -239,15 +239,7 @@ function App() {
      gallery, and story photos.
   */
 
-  /* -------------------------------------------------------
-     EXTERNAL PUBLIC DATA
-     - /public/data/entourage.xlsx
-     - /public/data/wedding-config.json
-  ------------------------------------------------------- */
-
-  const [entourageGroups, setEntourageGroups] = useState<EntourageGroup[]>([]);
-  const [entourageLoading, setEntourageLoading] = useState(true);
-  const [entourageError, setEntourageError] = useState("");
+  /* Public content is managed from the administrator portal. */
 
   const [weddingConfig, setWeddingConfig] = useState<ResolvedWeddingConfig>(
     DEFAULT_WEDDING_CONFIG,
@@ -487,141 +479,18 @@ function App() {
     };
   }, []);
 
-  /* =======================================================
-     LOAD: ENTOURAGE FROM PUBLIC EXCEL FILE
-
-     Expected worksheet: Entourage
-     Expected columns:
-     Group | Group Order | Role | Name | Person Order
-  ======================================================= */
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadEntourage() {
-      setEntourageLoading(true);
-      setEntourageError("");
-
-      if (weddingConfig.entourageGroups.length > 0) {
-        setEntourageGroups(
-          weddingConfig.entourageGroups.map((group, groupIndex) => ({
-            title: group.title,
-            order: groupIndex + 1,
-            people: group.people.map((person, personIndex) => ({
-              ...person,
-              order: personIndex + 1,
-            })),
-          })),
-        );
-        setEntourageLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch("/data/entourage.xlsx", {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          throw new Error(`Unable to load entourage.xlsx (${response.status})`);
-        }
-
-        const buffer = await response.arrayBuffer();
-        const XLSX = await import("xlsx");
-        const workbook = XLSX.read(buffer, { type: "array" });
-        const sheet =
-          workbook.Sheets.Entourage ?? workbook.Sheets[workbook.SheetNames[0]];
-
-        if (!sheet) {
-          throw new Error("No worksheet was found in entourage.xlsx");
-        }
-
-        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
-          defval: "",
-        });
-
-        const grouped = new Map<string, EntourageGroup>();
-
-        rows.forEach((row, index) => {
-          const title = String(row.Group ?? "").trim();
-
-          if (!title) {
-            return;
-          }
-
-          const rawGroupOrder = String(row["Group Order"] ?? "").trim();
-          const rawPersonOrder = String(row["Person Order"] ?? "").trim();
-          const groupOrderValue = Number(rawGroupOrder);
-          const personOrderValue = Number(rawPersonOrder);
-          const groupOrder =
-            rawGroupOrder && Number.isFinite(groupOrderValue)
-              ? groupOrderValue
-              : index + 1;
-          const personOrder =
-            rawPersonOrder && Number.isFinite(personOrderValue)
-              ? personOrderValue
-              : index + 1;
-          const role = String(row.Role ?? "").trim();
-          const name = String(row.Name ?? "").trim();
-
-          if (!grouped.has(title)) {
-            grouped.set(title, {
-              title,
-              order: groupOrder,
-              people: [],
-            });
-          }
-
-          const group = grouped.get(title);
-
-          if (!group) {
-            return;
-          }
-
-          group.order = Math.min(group.order, groupOrder);
-
-          if (name) {
-            group.people.push({
-              role,
-              name,
-              order: personOrder,
-            });
-          }
-        });
-
-        const parsedGroups = Array.from(grouped.values())
-          .map((group) => ({
-            ...group,
-            people: [...group.people].sort((a, b) => a.order - b.order),
-          }))
-          .sort((a, b) => a.order - b.order);
-
-        if (!cancelled) {
-          setEntourageGroups(parsedGroups);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setEntourageGroups([]);
-          setEntourageError(
-            error instanceof Error
-              ? error.message
-              : "Unable to load the entourage Excel file.",
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setEntourageLoading(false);
-        }
-      }
-    }
-
-    void loadEntourage();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [weddingConfig.entourageGroups]);
-
+  const entourageGroups = useMemo<EntourageGroup[]>(
+    () =>
+      weddingConfig.entourageGroups.map((group, groupIndex) => ({
+        title: group.title,
+        order: groupIndex + 1,
+        people: group.people.map((person, personIndex) => ({
+          ...person,
+          order: personIndex + 1,
+        })),
+      })),
+    [weddingConfig.entourageGroups],
+  );
   /* =======================================================
      LIVE WEDDING COUNTDOWN
   ======================================================= */
@@ -1616,8 +1485,8 @@ function App() {
           />
 
           {/* ===============================================
-              PART 07: ENTOURAGE FROM EXCEL
-              Source: /public/data/entourage.xlsx
+              PART 07: ENTOURAGE
+              Managed from Admin > Content > Entourage
           =============================================== */}
 
           {weddingConfig.features.entourage ? <section id="entourage" className="entourage-section floral-section">
@@ -1629,24 +1498,7 @@ function App() {
               </span>
             </div>
 
-            {entourageLoading ? (
-              <div className="entourage-status reveal-on-scroll reveal-up">
-                Loading entourage…
-              </div>
-            ) : null}
-
-            {!entourageLoading && entourageError ? (
-              <div className="entourage-status entourage-status--error">
-                <strong>Entourage list could not be loaded.</strong>
-                <span>
-                  Check <code>/public/data/entourage.xlsx</code> and keep the
-                  worksheet/column names from the supplied template.
-                </span>
-              </div>
-            ) : null}
-
-            {!entourageLoading && !entourageError ? (
-              <div className="entourage-grid">
+            <div className="entourage-grid">
                 {entourageGroups.map((group) => {
                   const wide =
                     group.people.length >= 6 ||
@@ -1686,11 +1538,10 @@ function App() {
 
                 {entourageGroups.length === 0 ? (
                   <div className="entourage-status">
-                    No entourage groups are currently listed in the Excel file.
+                    No entourage groups are currently published.
                   </div>
                 ) : null}
               </div>
-            ) : null}
           </section> : null}
 
           {/* ===============================================
