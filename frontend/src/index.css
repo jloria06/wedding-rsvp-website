@@ -4229,3 +4229,69 @@ code {
     transform: translateX(-50%) scaleY(1) !important;
   }
 }
+
+/* =========================================================
+   FULL-WIDTH OUR MOMENTS VIDEO
+========================================================= */
+
+.moments-section.floral-section {
+  padding: 72px 0 64px;
+}
+
+.moments-section .section-heading {
+  padding-inline: 24px;
+}
+
+.moments-video {
+  width: min(1200px, 100%);
+  margin: 30px auto 0;
+}
+
+.moments-video__frame,
+.moments-video__frame:hover {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.moments-video__frame::before,
+.moments-video__corner {
+  display: none;
+}
+
+.moments-video__youtube {
+  border-radius: 0;
+}
+
+.moments-video__caption {
+  margin-top: 20px;
+  padding-inline: 20px;
+}
+
+/* Show every Our Story photo in full without cropping. */
+.story-card__image {
+  background: linear-gradient(135deg, #eee3f4, #e8ddf0, #f1e5ee);
+}
+
+.story-card__image img,
+.story-card:hover .story-card__image img {
+  object-fit: contain;
+  transform: none;
+}
+
+@media (max-width: 600px) {
+  .moments-section.floral-section {
+    padding: 58px 0 52px;
+  }
+
+  .moments-section .section-heading {
+    padding-inline: 18px;
+  }
+
+  .moments-video {
+    margin-top: 24px;
+  }
+}
