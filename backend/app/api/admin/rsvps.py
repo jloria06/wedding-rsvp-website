@@ -66,3 +66,22 @@ def upsert_rsvp(
     )
     database_session.commit()
     return response
+
+
+@router.delete("/{guest_id}")
+def delete_rsvp(
+    guest_id: int,
+    current_administrator: GuestManager,
+    database_session: DatabaseSession,
+) -> dict[str, bool | str]:
+    guest_name = AdminRSVPManagementService(database_session).delete_rsvp(guest_id)
+    AdminAuditService(database_session).record(
+        current_administrator,
+        action="rsvp.deleted",
+        resource_type="rsvp",
+        resource_id=guest_id,
+        summary=f"Deleted RSVP response for {guest_name}.",
+        details={"guest_id": guest_id},
+    )
+    database_session.commit()
+    return {"success": True, "message": "RSVP response deleted successfully."}

@@ -120,3 +120,32 @@ def test_admin_rsvp_rejects_attendance_above_capacity() -> None:
 
         with pytest.raises(ConflictError, match="attendance capacity"):
             service.upsert_rsvp(second.id, request)
+
+
+def test_admin_can_delete_rsvp_without_deleting_invitation() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        guest = build_guest("DELETE-RSVP-TEST")
+        session.add(guest)
+        session.flush()
+        guest_id = guest.id
+        service = AdminRSVPManagementService(session)
+        service.upsert_rsvp(
+            guest_id,
+            AdminRSVPUpsertRequest(
+                status=RSVPStatus.ATTENDING,
+                attendance_type=AttendanceType.CEREMONY_AND_RECEPTION,
+                companions=[CompanionInput(first_name="Plus", last_name="One")],
+            ),
+        )
+
+        deleted_guest_name = service.delete_rsvp(guest_id)
+
+        assert deleted_guest_name == "Test Guest"
+        assert session.get(Guest, guest_id) is guest
+        refreshed = service.list_rsvps().rsvps[0]
+        assert refreshed.rsvp_id is None
+        assert refreshed.status == RSVPStatus.PENDING
+        assert refreshed.companions == []

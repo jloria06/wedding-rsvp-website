@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { ApiError } from "../lib/api";
 import {
+  deleteAdministratorRsvp,
   exportAdministratorRsvps,
   listAdministratorRsvps,
   saveAdministratorRsvp,
@@ -61,13 +62,21 @@ function draftFromRsvp(rsvp: AdminRSVP): RSVPDraft {
 export function RSVPManagement({ accessToken, role }: { accessToken: string; role: AdminRole }) {
   const [rsvps, setRsvps] = useState<AdminRSVP[]>([]);
   const [selected, setSelected] = useState<AdminRSVP | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [showBulkEditor, setShowBulkEditor] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState<RSVPStatus | "unchanged">("unchanged");
+  const [bulkAttendance, setBulkAttendance] = useState<AttendanceType | "unchanged">("unchanged");
+  const [bulkMeal, setBulkMeal] = useState<MealPreference | "unchanged" | "clear">("unchanged");
   const [draft, setDraft] = useState<RSVPDraft | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RSVPStatus | "all">("all");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isBulkSaving, setIsBulkSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const canManage = role !== "viewer";
 
@@ -89,6 +98,32 @@ export function RSVPManagement({ accessToken, role }: { accessToken: string; rol
       return matchesSearch && (statusFilter === "all" || rsvp.status === statusFilter);
     });
   }, [rsvps, search, statusFilter]);
+
+  const selectedRsvps = useMemo(
+    () => rsvps.filter((rsvp) => selectedIds.has(rsvp.guest_id)),
+    [rsvps, selectedIds],
+  );
+  const selectableIds = filtered.map((rsvp) => rsvp.guest_id);
+  const allVisibleSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id));
+  const selectedResponseCount = selectedRsvps.filter((rsvp) => rsvp.rsvp_id !== null).length;
+
+  function toggleSelected(guestId: number): void {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(guestId)) next.delete(guestId);
+      else next.add(guestId);
+      return next;
+    });
+  }
+
+  function toggleAllVisible(): void {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (allVisibleSelected) selectableIds.forEach((id) => next.delete(id));
+      else selectableIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }
 
   function openEditor(rsvp: AdminRSVP): void {
     setSelected(rsvp);
@@ -159,6 +194,68 @@ export function RSVPManagement({ accessToken, role }: { accessToken: string; rol
     } finally { setIsExporting(false); }
   }
 
+  function rsvpInputForBulk(rsvp: AdminRSVP): RSVPInput {
+    const status = bulkStatus === "unchanged" ? rsvp.status : bulkStatus;
+    const attendance = bulkAttendance === "unchanged"
+      ? rsvp.attendance_type ?? "ceremony_and_reception"
+      : bulkAttendance;
+    const meal = bulkMeal === "unchanged" ? rsvp.meal_preference : bulkMeal === "clear" ? null : bulkMeal;
+    return {
+      status,
+      attendance_type: status === "attending" ? attendance : null,
+      meal_preference: status === "attending" ? meal : null,
+      dietary_restrictions: status === "attending" ? rsvp.dietary_restrictions : null,
+      guest_message: rsvp.guest_message,
+      companions: status === "attending" ? rsvp.companions.map((companion) => ({
+        first_name: companion.first_name,
+        middle_name: companion.middle_name,
+        last_name: companion.last_name,
+        meal_preference: companion.meal_preference,
+        dietary_restrictions: companion.dietary_restrictions,
+      })) : [],
+    };
+  }
+
+  async function saveBulkChanges(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    if (bulkStatus === "unchanged" && bulkAttendance === "unchanged" && bulkMeal === "unchanged") return;
+    setIsBulkSaving(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      for (const rsvp of selectedRsvps) {
+        await saveAdministratorRsvp(accessToken, rsvp.guest_id, rsvpInputForBulk(rsvp));
+      }
+      setSuccessMessage(`${selectedRsvps.length} RSVP record${selectedRsvps.length === 1 ? "" : "s"} updated.`);
+      setSelectedIds(new Set());
+      setShowBulkEditor(false);
+      setBulkStatus("unchanged");
+      setBulkAttendance("unchanged");
+      setBulkMeal("unchanged");
+      setReloadKey((value) => value + 1);
+    } catch (error) {
+      setErrorMessage(error instanceof ApiError ? error.message : "The selected RSVPs could not be updated.");
+    } finally { setIsBulkSaving(false); }
+  }
+
+  async function deleteSelectedResponses(): Promise<void> {
+    setIsBulkSaving(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      const responses = selectedRsvps.filter((rsvp) => rsvp.rsvp_id !== null);
+      for (const rsvp of responses) {
+        await deleteAdministratorRsvp(accessToken, rsvp.guest_id);
+      }
+      setSuccessMessage(`${responses.length} RSVP response${responses.length === 1 ? "" : "s"} deleted. Invitation records were kept.`);
+      setSelectedIds(new Set());
+      setShowDeleteConfirm(false);
+      setReloadKey((value) => value + 1);
+    } catch (error) {
+      setErrorMessage(error instanceof ApiError ? error.message : "The selected RSVP responses could not be deleted.");
+    } finally { setIsBulkSaving(false); }
+  }
+
   return (
     <section className="admin-guests admin-rsvps" aria-labelledby="rsvp-management-title">
       <div className="admin-section-heading">
@@ -169,13 +266,26 @@ export function RSVPManagement({ accessToken, role }: { accessToken: string; rol
         <input aria-label="Search RSVPs" placeholder="Search guest, code, or guest group" value={search} onChange={(event) => setSearch(event.target.value)} />
         <select aria-label="Filter RSVP status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as RSVPStatus | "all")}><option value="all">All RSVP statuses</option><option value="pending">Pending</option><option value="attending">Attending</option><option value="not_attending">Declined</option></select>
       </div>
+      {canManage ? <div className="admin-bulk-toolbar" aria-live="polite">
+        <span><strong>{selectedIds.size}</strong> selected</span>
+        <div>
+          <button type="button" onClick={toggleAllVisible} disabled={filtered.length === 0}>{allVisibleSelected ? "Clear visible" : "Select all visible"}</button>
+          <button type="button" onClick={() => setShowBulkEditor(true)} disabled={selectedIds.size === 0}>Edit selected</button>
+          <button className="is-danger" type="button" onClick={() => setShowDeleteConfirm(true)} disabled={selectedResponseCount === 0}>Delete responses</button>
+        </div>
+      </div> : null}
       {errorMessage ? <p className="admin-error" role="alert">{errorMessage}</p> : null}
+      {successMessage ? <p className="admin-success" role="status">{successMessage}</p> : null}
       {isLoading ? <p className="admin-table-message">Loading RSVPs...</p> : (
-        <div className="admin-table-wrap"><table className="admin-guest-table admin-rsvp-table"><thead><tr><th>Guest</th><th>Status</th><th>Attendance</th><th>Companions</th><th>Meal</th><th>Responded</th><th>Actions</th></tr></thead><tbody>
-          {filtered.map((rsvp) => <tr key={rsvp.guest_id}><td><strong>{rsvp.guest_name}</strong><small>{rsvp.household_name || rsvp.invitation_code}</small></td><td><span className={`admin-status-pill is-${rsvp.status}`}>{label(rsvp.status)}</span></td><td>{label(rsvp.attendance_type)}</td><td>{rsvp.companion_count} / {rsvp.maximum_companions}</td><td>{label(rsvp.meal_preference)}</td><td>{rsvp.responded_at ? new Date(rsvp.responded_at).toLocaleDateString() : "Awaiting response"}</td><td><div className="admin-row-actions"><button type="button" onClick={() => openEditor(rsvp)}>{canManage ? (rsvp.rsvp_id ? "Edit" : "Add RSVP") : "View"}</button></div></td></tr>)}
-          {filtered.length === 0 ? <tr><td colSpan={7} className="admin-table-message">No RSVPs match these filters.</td></tr> : null}
+        <div className="admin-table-wrap"><table className="admin-guest-table admin-rsvp-table"><thead><tr>{canManage ? <th className="admin-selection-cell"><input type="checkbox" aria-label="Select all visible RSVPs" checked={allVisibleSelected} onChange={toggleAllVisible} /></th> : null}<th>Guest</th><th>Status</th><th>Attendance</th><th>Companions</th><th>Meal</th><th>Responded</th><th>Actions</th></tr></thead><tbody>
+          {filtered.map((rsvp) => <tr key={rsvp.guest_id} className={selectedIds.has(rsvp.guest_id) ? "is-selected" : undefined}>{canManage ? <td className="admin-selection-cell"><input type="checkbox" aria-label={`Select ${rsvp.guest_name}`} checked={selectedIds.has(rsvp.guest_id)} onChange={() => toggleSelected(rsvp.guest_id)} /></td> : null}<td><strong>{rsvp.guest_name}</strong><small>{rsvp.household_name || rsvp.invitation_code}</small></td><td><span className={`admin-status-pill is-${rsvp.status}`}>{label(rsvp.status)}</span></td><td>{label(rsvp.attendance_type)}</td><td>{rsvp.companion_count} / {rsvp.maximum_companions}</td><td>{label(rsvp.meal_preference)}</td><td>{rsvp.responded_at ? new Date(rsvp.responded_at).toLocaleDateString() : "Awaiting response"}</td><td><div className="admin-row-actions"><button type="button" onClick={() => openEditor(rsvp)}>{canManage ? (rsvp.rsvp_id ? "Edit" : "Add RSVP") : "View"}</button>{canManage && rsvp.rsvp_id ? <button className="is-danger" type="button" onClick={() => { setSelectedIds(new Set([rsvp.guest_id])); setShowDeleteConfirm(true); }}>Delete</button> : null}</div></td></tr>)}
+          {filtered.length === 0 ? <tr><td colSpan={canManage ? 8 : 7} className="admin-table-message">No RSVPs match these filters.</td></tr> : null}
         </tbody></table></div>
       )}
+
+      {showBulkEditor ? <div className="admin-editor-backdrop"><section className="admin-guest-editor admin-bulk-editor" aria-labelledby="bulk-rsvp-title"><div className="admin-editor-header"><div><p className="admin-status-label">Bulk edit</p><h2 id="bulk-rsvp-title">Edit {selectedIds.size} selected RSVPs</h2><p>Only changed fields will be applied. Companion names and guest messages stay unchanged while the RSVP remains Attending.</p></div><button type="button" onClick={() => setShowBulkEditor(false)}>Close</button></div><form onSubmit={saveBulkChanges}><div className="admin-form-grid"><label>RSVP status<select value={bulkStatus} onChange={(event) => setBulkStatus(event.target.value as RSVPStatus | "unchanged")}><option value="unchanged">Leave unchanged</option><option value="pending">Pending</option><option value="attending">Attending</option><option value="not_attending">Declined</option></select></label><label>Attendance<select value={bulkAttendance} onChange={(event) => setBulkAttendance(event.target.value as AttendanceType | "unchanged")}><option value="unchanged">Leave unchanged</option><option value="ceremony_and_reception">Ceremony and reception</option><option value="ceremony_only">Ceremony only</option><option value="reception_only">Reception only</option></select></label><label>Guest meal<select value={bulkMeal} onChange={(event) => setBulkMeal(event.target.value as MealPreference | "unchanged" | "clear")}><option value="unchanged">Leave unchanged</option><option value="clear">Clear meal</option><option value="standard">Standard</option><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option><option value="halal">Halal</option><option value="other">Other</option></select></label></div><div className="admin-editor-actions"><button type="button" onClick={() => setShowBulkEditor(false)}>Cancel</button><button type="submit" disabled={isBulkSaving || (bulkStatus === "unchanged" && bulkAttendance === "unchanged" && bulkMeal === "unchanged")}>{isBulkSaving ? "Updating..." : "Update selected"}</button></div></form></section></div> : null}
+
+      {showDeleteConfirm ? <div className="admin-editor-backdrop"><section className="admin-guest-editor admin-confirm-dialog" role="alertdialog" aria-labelledby="delete-rsvp-title" aria-describedby="delete-rsvp-description"><div className="admin-editor-header"><div><p className="admin-status-label">Cleanup</p><h2 id="delete-rsvp-title">Delete {selectedResponseCount} RSVP response{selectedResponseCount === 1 ? "" : "s"}?</h2></div></div><p id="delete-rsvp-description">This removes the selected answers, companions, seating assignment, and check-in state. Guest invitations and invitation codes remain available for a new response.</p><div className="admin-editor-actions"><button type="button" onClick={() => setShowDeleteConfirm(false)}>Cancel</button><button className="is-danger-solid" type="button" onClick={() => void deleteSelectedResponses()} disabled={isBulkSaving}>{isBulkSaving ? "Deleting..." : "Delete responses"}</button></div></section></div> : null}
 
       {selected && draft ? <div className="admin-editor-backdrop"><section className="admin-guest-editor admin-rsvp-editor" aria-labelledby="rsvp-editor-title"><div className="admin-editor-header"><div><p className="admin-status-label">{selected.rsvp_id ? "RSVP details" : "Manual RSVP"}</p><h2 id="rsvp-editor-title">{selected.guest_name}</h2><p>{selected.invitation_code} · Up to {selected.maximum_companions} companions</p></div><button type="button" onClick={closeEditor}>Close</button></div><form onSubmit={save}>
         <div className="admin-form-grid"><label>RSVP status<select value={draft.status} onChange={(event) => setStatus(event.target.value as RSVPStatus)} disabled={!canManage}><option value="pending">Pending</option><option value="attending">Attending</option><option value="not_attending">Declined</option></select></label>{draft.status === "attending" ? <><label>Attendance<select value={draft.attendance_type} onChange={(event) => setDraft({...draft, attendance_type:event.target.value as AttendanceType})} disabled={!canManage} required><option value="ceremony_and_reception">Ceremony and reception</option><option value="ceremony_only">Ceremony only</option><option value="reception_only">Reception only</option></select></label><label>Guest meal<select value={draft.meal_preference} onChange={(event) => setDraft({...draft, meal_preference:event.target.value as MealPreference | ""})} disabled={!canManage}><option value="">Not provided</option><option value="standard">Standard</option><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option><option value="halal">Halal</option><option value="other">Other</option></select></label><label>Dietary restrictions<input value={draft.dietary_restrictions} onChange={(event) => setDraft({...draft, dietary_restrictions:event.target.value})} disabled={!canManage} /></label></> : null}</div>

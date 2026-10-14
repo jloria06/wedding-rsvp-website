@@ -205,6 +205,16 @@ export function saveAdministratorRsvp(
   });
 }
 
+export function deleteAdministratorRsvp(
+  accessToken: string,
+  guestId: number,
+): Promise<MessageResponse> {
+  return apiRequest<MessageResponse>(`/admin/rsvps/${guestId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
 export function exportAdministratorRsvps(accessToken: string): Promise<Blob> {
   return apiDownload("/admin/rsvps/export.csv", {
     headers: { Authorization: `Bearer ${accessToken}` },

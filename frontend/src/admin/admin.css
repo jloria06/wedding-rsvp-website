@@ -494,6 +494,18 @@
 .admin-section-heading > button:disabled { cursor:wait; opacity:.65; }
 .admin-rsvp-filters { grid-template-columns:minmax(16rem,1fr) minmax(12rem,.35fr); }
 .admin-rsvp-table { min-width:68rem; }
+.admin-rsvp-table .admin-selection-cell { width:3rem; padding-right:.35rem; text-align:center; }
+.admin-selection-cell input { width:1rem; height:1rem; accent-color:var(--admin-purple-dark); cursor:pointer; }
+.admin-rsvp-table tbody tr.is-selected { background:#f4edf8; }
+.admin-bulk-toolbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; padding:.75rem 1rem; border:1px solid var(--admin-border); border-radius:.8rem; background:rgba(255,255,255,.75); }
+.admin-bulk-toolbar > span { color:var(--admin-muted); font-size:.78rem; }
+.admin-bulk-toolbar > span strong { color:var(--admin-purple-dark); }
+.admin-bulk-toolbar > div { display:flex; flex-wrap:wrap; gap:.5rem; }
+.admin-bulk-toolbar button { min-height:2.4rem; padding:.5rem .75rem; border:1px solid var(--admin-border); border-radius:.55rem; background:#fff; color:var(--admin-purple-dark); cursor:pointer; font-weight:700; }
+.admin-bulk-toolbar button.is-danger { color:#8b2f3f; }
+.admin-bulk-toolbar button:disabled { cursor:not-allowed; opacity:.45; }
+.admin-bulk-editor .admin-editor-header p:not(.admin-status-label), .admin-confirm-dialog > p { color:var(--admin-muted); font-size:.8rem; line-height:1.6; }
+.admin-editor-actions button.is-danger-solid { border-color:#8b2f3f; background:#8b2f3f; color:#fff; }
 .admin-status-pill { display:inline-flex; padding:.3rem .55rem; border-radius:999px; background:var(--admin-lavender); color:var(--admin-purple-dark); font-size:.68rem; font-weight:700; }
 .admin-status-pill.is-attending { background:#e3f3e9; color:#27643c; }
 .admin-status-pill.is-not_attending { background:#f8e7e9; color:#8b2f3f; }
@@ -508,6 +520,7 @@
 .admin-companions legend { padding:0 .4rem; color:var(--admin-muted); font-size:.72rem; font-weight:700; }
 .admin-remove-companion { margin-top:.8rem; color:#8b2f3f; }
 @media (max-width:900px) { .admin-rsvp-filters { grid-template-columns:1fr; } }
+@media (max-width:640px) { .admin-bulk-toolbar { align-items:stretch; flex-direction:column; } .admin-bulk-toolbar > div { display:grid; grid-template-columns:1fr; } }
 
 .admin-success { padding:.8rem; border-radius:.6rem; background:#e3f3e9; color:#27643c; font-size:.8rem; }
 .admin-content-form { display:grid; gap:1rem; }

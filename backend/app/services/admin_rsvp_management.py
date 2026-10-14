@@ -114,6 +114,21 @@ class AdminRSVPManagementService:
             rsvp=self._build_item(guest),
         )
 
+    def delete_rsvp(self, guest_id: int) -> str:
+        guest = self.guest_repository.get_by_id(guest_id)
+        if guest is None:
+            raise ResourceNotFoundError("Guest not found.")
+        rsvp = self.rsvp_repository.get_by_guest_id(guest_id)
+        if rsvp is None:
+            raise ResourceNotFoundError("RSVP response not found.")
+        if guest.seat_assignment is not None:
+            self.database_session.delete(guest.seat_assignment)
+        guest.checked_in_at = None
+        guest.checked_in_companion_count = 0
+        guest.rsvp = None
+        self.database_session.flush()
+        return guest.full_name
+
     def export_csv(self) -> str:
         output = io.StringIO(newline="")
         writer = csv.writer(output)
