@@ -23,6 +23,7 @@ import {
 import "./admin.css";
 import { GuestManagement } from "./GuestManagement";
 import { RSVPManagement } from "./RSVPManagement";
+import { WeddingPlanner } from "./WeddingPlanner";
 import { ContentManagement } from "./ContentManagement";
 import { SeatingManagement } from "./SeatingManagement";
 import { ReportsManagement } from "./ReportsManagement";
@@ -407,6 +408,12 @@ function AdminLayout({
             RSVPs
           </a>
           <a
+            className={location.pathname.startsWith("/admin/planner") ? "is-active" : ""}
+            href="/admin/planner"
+          >
+            Wedding Planner
+          </a>
+          <a
             className={location.pathname.startsWith("/admin/content") || location.pathname.startsWith("/admin/gallery") ? "is-active" : ""}
             href="/admin/content"
           >
@@ -466,6 +473,8 @@ function AdminLayout({
           <GuestManagement accessToken={accessToken} role={profile.role} />
         ) : location.pathname.startsWith("/admin/rsvps") ? (
           <RSVPManagement accessToken={accessToken} role={profile.role} />
+        ) : location.pathname.startsWith("/admin/planner") ? (
+          <WeddingPlanner />
         ) : location.pathname.startsWith("/admin/content") ? (
           <ContentManagement accessToken={accessToken} role={profile.role} />
         ) : location.pathname.startsWith("/admin/seating") ? (
