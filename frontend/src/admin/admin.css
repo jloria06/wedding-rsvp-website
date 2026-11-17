@@ -427,6 +427,8 @@
 
 .admin-guests { margin-top: 3rem; }
 .admin-rsvp-summary { margin-bottom: 1.25rem; }
+.admin-rsvp-summary .admin-summary-section th { background: var(--admin-lavender); color: var(--admin-purple-dark); }
+.admin-rsvp-summary .admin-summary-subtotal > *, .admin-rsvp-summary tfoot > tr > * { font-weight: 700; }
 .admin-section-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; margin-bottom:1.25rem; }
 .admin-section-heading h2, .admin-guest-editor h2 { margin:0; font-family:"Cormorant Garamond", Georgia, serif; font-size:clamp(2rem,4vw,3rem); font-weight:500; }
 .admin-section-heading p:not(.admin-status-label) { margin:.5rem 0 0; color:var(--admin-muted); font-size:.82rem; }

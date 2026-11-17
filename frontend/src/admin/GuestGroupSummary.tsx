@@ -19,8 +19,33 @@ const emptyCounts = (): GroupCounts => ({
   declined: 0,
 });
 
+const sideGroups = [
+  {
+    name: "Groom's Side",
+    groups: [
+      "John Paul's Family",
+      "John Paul's Friends",
+      "John Paul's Workmates",
+    ],
+  },
+  {
+    name: "Bride's Side",
+    groups: ["Joyce's Family", "Joyce's Friends", "Joyce's Workmates"],
+  },
+  { name: "Entourage", groups: ["Wedding Entourage", "Principal Sponsors"] },
+];
+
+function sumCounts(rows: { counts: GroupCounts }[]): GroupCounts {
+  const total = emptyCounts();
+  for (const row of rows) {
+    for (const key of Object.keys(total) as (keyof GroupCounts)[])
+      total[key] += row.counts[key];
+  }
+  return total;
+}
+
 export function GuestGroupSummary({ rsvps }: { rsvps: AdminRSVP[] }) {
-  const { groups, total } = useMemo(() => {
+  const { sections, total } = useMemo(() => {
     const counts = new Map<string, GroupCounts>(
       guestGroups.map((group) => [group, emptyCounts()]),
     );
@@ -44,12 +69,18 @@ export function GuestGroupSummary({ rsvps }: { rsvps: AdminRSVP[] }) {
       name,
       counts: counts.get(name) ?? emptyCounts(),
     }));
-    const total = emptyCounts();
-    for (const group of groups) {
-      for (const key of Object.keys(total) as (keyof GroupCounts)[])
-        total[key] += group.counts[key];
-    }
-    return { groups, total };
+    const assigned = new Set(sideGroups.flatMap((side) => side.groups));
+    const sections = [
+      ...sideGroups.map((side) => ({
+        name: side.name,
+        groups: groups.filter((group) => side.groups.includes(group.name)),
+      })),
+      {
+        name: "Others",
+        groups: groups.filter((group) => !assigned.has(group.name)),
+      },
+    ].map((section) => ({ ...section, subtotal: sumCounts(section.groups) }));
+    return { sections, total: sumCounts(groups) };
   }, [rsvps]);
 
   function cells(counts: GroupCounts) {
@@ -88,17 +119,28 @@ export function GuestGroupSummary({ rsvps }: { rsvps: AdminRSVP[] }) {
               <th scope="col">Declined responses</th>
             </tr>
           </thead>
-          <tbody>
-            {groups.map((group) => (
-              <tr key={group.name}>
-                <th scope="row">{group.name || "Unassigned"}</th>
-                {cells(group.counts)}
+          {sections.map((section) => (
+            <tbody key={section.name} aria-label={section.name}>
+              <tr className="admin-summary-section">
+                <th scope="rowgroup" colSpan={6}>
+                  {section.name}
+                </th>
               </tr>
-            ))}
-          </tbody>
+              {section.groups.map((group) => (
+                <tr key={group.name}>
+                  <th scope="row">{group.name || "Unassigned"}</th>
+                  {cells(group.counts)}
+                </tr>
+              ))}
+              <tr className="admin-summary-subtotal">
+                <th scope="row">{section.name} subtotal</th>
+                {cells(section.subtotal)}
+              </tr>
+            </tbody>
+          ))}
           <tfoot>
             <tr>
-              <th scope="row">Total</th>
+              <th scope="row">Overall total</th>
               {cells(total)}
             </tr>
           </tfoot>
