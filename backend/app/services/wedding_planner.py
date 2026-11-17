@@ -46,7 +46,7 @@ def summarize(document: PlannerDocument, today: date | None = None) -> dict:
         balance = None if forecast is None else forecast - paid[expense.id]
         scheduled_balance = 0
         for installment in document.installments:
-            if installment.expense_id != expense.id:
+            if installment.expense_id != expense.id or installment.cancelled:
                 continue
             amount = installment.amount - installment_paid[installment.id]
             scheduled_balance += amount

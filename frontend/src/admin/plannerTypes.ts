@@ -11,6 +11,7 @@ export type PlannerVendor = {
   notes: string;
 };
 export type PlannerExpense = {
+  payment_arrangement?: "flexible" | "installment";
   id: string;
   name: string;
   category_id: string;
@@ -21,6 +22,7 @@ export type PlannerExpense = {
   notes: string;
 };
 export type PlannerInstallment = {
+  cancelled?: boolean;
   id: string;
   name: string;
   expense_id: string;
@@ -170,7 +172,7 @@ export function validatePlannerDraft(document: PlannerDocument) {
       .filter((p) => p.expense_id === e.id)
       .reduce((sum, p) => sum + p.amount, 0);
     const scheduled = document.installments
-      .filter((i) => i.expense_id === e.id)
+      .filter((i) => i.expense_id === e.id && !i.cancelled)
       .reduce(
         (sum, i) =>
           sum +

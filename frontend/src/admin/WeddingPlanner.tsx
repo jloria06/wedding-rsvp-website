@@ -9,6 +9,8 @@ import {
 import { ApiError } from "../lib/api";
 import type { AdminRole } from "./types";
 import { loadPlanner, savePlanner } from "./plannerApi";
+import { MonthlyPlanForm } from "./MonthlyPlanForm";
+import { paymentPlanTotals, switchToFlexiblePayments } from "./paymentPlans";
 import {
   reviewPlannerWorkbook,
   type PlannerImportReview,
@@ -41,6 +43,7 @@ type Collection =
   | "vendors"
   | "checklist";
 type Editor = {
+  context: boolean;
   collection: Collection;
   id: string | null;
   values: Record<string, string>;
@@ -71,6 +74,9 @@ export function WeddingPlanner({
   const [success, setSuccess] = useState("");
   const [conflict, setConflict] = useState(false);
   const [editor, setEditor] = useState<Editor | null>(null);
+  const [planExpenseId, setPlanExpenseId] = useState<string | null>(null);
+  const [planFilter, setPlanFilter] = useState("");
+  const [showCancelled, setShowCancelled] = useState(false);
   const [removal, setRemoval] = useState<{
     collection: Collection;
     id: string;
@@ -109,6 +115,7 @@ export function WeddingPlanner({
       setPlanner(await loadPlanner(accessToken));
       setConflict(false);
       setEditor(null);
+      setPlanExpenseId(null);
       setReview(null);
       setRemoval(null);
     } catch (e) {
@@ -146,16 +153,29 @@ export function WeddingPlanner({
       ? planner?.document[collection].find((item) => item.id === id)
       : null;
     const values: Record<string, string> = { ...defaults };
+    if (collection === "expenses") values.payment_arrangement = "flexible";
     if (record)
       for (const [key, value] of Object.entries(record))
         values[key] = value == null ? "" : String(value);
+    if (
+      collection === "expenses" &&
+      id &&
+      planner &&
+      paymentPlanTotals(planner.document, id).pending.length > 0
+    )
+      values.payment_arrangement = "installment";
     for (const field of ["budget", "estimate", "actual", "amount"])
       if (record && field in record)
         values[field] = moneyInput(
           (record as unknown as Record<string, number | null>)[field],
         );
     setError("");
-    setEditor({ collection, id, values });
+    setEditor({
+      collection,
+      id,
+      values,
+      context: collection === "payments" && !!defaults.expense_id,
+    });
   }
 
   async function submitEditor(event: FormEvent) {
@@ -194,6 +214,10 @@ export function WeddingPlanner({
             actual: parseMoney(v.actual ?? ""),
             due_date: v.due_date || null,
             notes: v.notes ?? "",
+            payment_arrangement:
+              v.payment_arrangement === "installment"
+                ? "installment"
+                : "flexible",
           };
           break;
         case "installments":
@@ -203,6 +227,7 @@ export function WeddingPlanner({
             expense_id: v.expense_id,
             amount: requiredAmount(),
             due_date: v.due_date,
+            cancelled: v.cancelled === "true",
           };
           break;
         case "payments":
@@ -233,8 +258,28 @@ export function WeddingPlanner({
             item.id === id ? record : item,
           )
         : [...document[editor.collection], record];
-      if (await persist(document, `${labels[editor.collection]} saved.`))
+      const hasUnpaidSchedule =
+        paymentPlanTotals(planner.document, id).pending.length > 0;
+      const switchingToFlexible =
+        editor.collection === "expenses" &&
+        v.payment_arrangement !== "installment" &&
+        hasUnpaidSchedule;
+      if (switchingToFlexible && v.confirm_flexible !== "true")
+        throw new Error(
+          "Confirm cancelling unpaid scheduled amounts before switching to flexible payments.",
+        );
+      const nextDocument = switchingToFlexible
+        ? switchToFlexiblePayments(document, id)
+        : document;
+      if (await persist(nextDocument, `${labels[editor.collection]} saved.`)) {
         setEditor(null);
+        if (
+          editor.collection === "expenses" &&
+          v.payment_arrangement === "installment" &&
+          (paymentPlanTotals(nextDocument, id).unscheduled ?? 0) > 0
+        )
+          setPlanExpenseId(id);
+      }
     } catch (e) {
       setError(errorText(e));
     }
@@ -407,7 +452,7 @@ export function WeddingPlanner({
           e.target.value = "";
         }}
       />
-      {error && !editor && !review && !removal && (
+      {error && !editor && !review && !removal && planExpenseId === null && (
         <p className="admin-error" role="alert">
           {error}
         </p>
@@ -671,6 +716,12 @@ export function WeddingPlanner({
                               ?.name ?? "Vendor not assigned"}
                           </small>
                           <small>{e.notes}</small>
+                          <small>
+                            {e.payment_arrangement === "installment" ||
+                            paymentPlanTotals(d, e.id).pending.length
+                              ? "Installment plan"
+                              : "One-time / flexible payments"}
+                          </small>
                         </td>
                         <td>
                           {
@@ -695,23 +746,53 @@ export function WeddingPlanner({
                                 (i) => i.expense_id === e.id,
                               ),
                           )}
-                          {canManage && (
+                          {e.payment_arrangement === "installment" ||
+                          paymentPlanTotals(d, e.id).pending.length > 0 ? (
                             <div className="admin-row-actions">
                               <button
                                 type="button"
-                                disabled={
-                                  disabled || !s.expenses[e.id]?.balance
-                                }
-                                onClick={() =>
-                                  openEditor("payments", null, {
-                                    expense_id: e.id,
-                                    paid_date: manilaToday(),
-                                  })
-                                }
+                                disabled={disabled}
+                                onClick={() => {
+                                  setPlanFilter(e.id);
+                                  setActiveTab("Installments");
+                                }}
                               >
-                                Record payment
+                                View payment plan
                               </button>
+                              {canManage &&
+                                (paymentPlanTotals(d, e.id).unscheduled ?? 0) >
+                                  0 && (
+                                  <button
+                                    type="button"
+                                    disabled={disabled}
+                                    onClick={() => {
+                                      setError("");
+                                      setPlanExpenseId(e.id);
+                                    }}
+                                  >
+                                    Set up payment plan
+                                  </button>
+                                )}
                             </div>
+                          ) : (
+                            canManage && (
+                              <div className="admin-row-actions">
+                                <button
+                                  type="button"
+                                  disabled={
+                                    disabled || !s.expenses[e.id]?.balance
+                                  }
+                                  onClick={() =>
+                                    openEditor("payments", null, {
+                                      expense_id: e.id,
+                                      paid_date: manilaToday(),
+                                    })
+                                  }
+                                >
+                                  Record payment
+                                </button>
+                              </div>
+                            )
                           )}
                         </td>
                       </tr>
@@ -764,14 +845,117 @@ export function WeddingPlanner({
             {activeTab === "Installments" && (
               <>
                 <div className="admin-subsection-heading">
-                  <h3>Installment schedule</h3>
-                  {add("installments", "Add installment")}
+                  <h3>Payment plans</h3>
+                  {canManage && (
+                    <div className="admin-section-actions">
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => {
+                          setError("");
+                          setPlanExpenseId("");
+                        }}
+                      >
+                        Set up payment plan
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <p className="admin-content-help">
-                  Payments linked to an installment reduce both its balance and
-                  the expense balance. Unlinked payments do not settle scheduled
-                  installments.
+                  Set up the monthly schedule once. When you pay, click Record
+                  payment on the scheduled row below. The expense balance and
+                  payment history update together.
                 </p>
+                <div className="planner-filters">
+                  <select
+                    aria-label="Filter payment plans"
+                    value={planFilter}
+                    onChange={(e) => setPlanFilter(e.target.value)}
+                  >
+                    <option value="">All expenses</option>
+                    {d.expenses.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.name}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="admin-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={showCancelled}
+                      onChange={(e) => setShowCancelled(e.target.checked)}
+                    />
+                    Show cancelled schedule history
+                  </label>
+                </div>
+                <div className="planner-overview-grid">
+                  {d.expenses
+                    .filter(
+                      (e) =>
+                        (!planFilter || e.id === planFilter) &&
+                        (e.payment_arrangement === "installment" ||
+                          d.installments.some(
+                            (i) => i.expense_id === e.id && !i.cancelled,
+                          )),
+                    )
+                    .map((e) => {
+                      const totals = paymentPlanTotals(d, e.id);
+                      return (
+                        <div className="admin-content-card" key={e.id}>
+                          <h3>{e.name}</h3>
+                          <div className="planner-plan-totals">
+                            <div>
+                              Total cost<strong>{money(totals.cost)}</strong>
+                            </div>
+                            <div>
+                              Already paid<strong>{money(totals.paid)}</strong>
+                            </div>
+                            <div>
+                              Remaining balance
+                              <strong>{money(totals.balance)}</strong>
+                            </div>
+                          </div>
+                          <p className="admin-content-help">
+                            {totals.next
+                              ? `Next payment: ${money(totals.next.remaining)} due ${displayDate(totals.next.due_date)}`
+                              : totals.balance === 0
+                                ? "Fully paid."
+                                : "No upcoming payments scheduled."}
+                          </p>
+                          {(totals.unscheduled ?? 0) > 0 && (
+                            <p className="admin-content-help">
+                              {money(totals.unscheduled)} still needs a
+                              schedule.
+                            </p>
+                          )}
+                          {canManage && (
+                            <div className="admin-row-actions">
+                              {(totals.unscheduled ?? 0) > 0 && (
+                                <button
+                                  type="button"
+                                  disabled={disabled}
+                                  onClick={() => {
+                                    setError("");
+                                    setPlanExpenseId(e.id);
+                                  }}
+                                >
+                                  Schedule remaining balance
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                disabled={disabled}
+                                onClick={() => openEditor("expenses", e.id)}
+                              >
+                                Edit payment arrangement
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+                <h3>Scheduled payments</h3>
                 <Table
                   headings={[
                     "Expense / installment",
@@ -785,10 +969,15 @@ export function WeddingPlanner({
                   empty="No installments."
                 >
                   {[...d.installments]
+                    .filter(
+                      (i) =>
+                        (!planFilter || i.expense_id === planFilter) &&
+                        (showCancelled || !i.cancelled),
+                    )
                     .sort((a, b) => a.due_date.localeCompare(b.due_date))
                     .map((i) => {
                       const paid = installmentPaid(i.id);
-                      const remaining = i.amount - paid;
+                      const remaining = i.cancelled ? 0 : i.amount - paid;
                       return (
                         <tr key={i.id}>
                           <td>
@@ -800,23 +989,26 @@ export function WeddingPlanner({
                           <td>{money(paid)}</td>
                           <td>{money(remaining)}</td>
                           <td>
-                            {!remaining
-                              ? "Paid"
-                              : i.due_date < s.as_of
-                                ? "Overdue"
-                                : paid
-                                  ? "Partially paid"
-                                  : "Pending"}
+                            {i.cancelled
+                              ? "Cancelled"
+                              : !remaining
+                                ? "Paid"
+                                : i.due_date < s.as_of
+                                  ? "Overdue"
+                                  : paid
+                                    ? "Partially paid"
+                                    : "Pending"}
                           </td>
                           <td>
-                            {actions(
-                              "installments",
-                              i.id,
-                              i.name,
-                              !d.payments.some(
-                                (p) => p.installment_id === i.id,
-                              ),
-                            )}
+                            {!i.cancelled &&
+                              actions(
+                                "installments",
+                                i.id,
+                                i.name,
+                                !d.payments.some(
+                                  (p) => p.installment_id === i.id,
+                                ),
+                              )}
                             {canManage && remaining > 0 && (
                               <div className="admin-row-actions">
                                 <button
@@ -962,13 +1154,57 @@ export function WeddingPlanner({
           </div>
         </>
       )}
+      {planExpenseId !== null && d && (
+        <PlannerDialog
+          title="Set up payment plan"
+          onClose={() => setPlanExpenseId(null)}
+          busy={saving}
+        >
+          <MonthlyPlanForm
+            document={d}
+            initialExpenseId={planExpenseId}
+            busy={disabled}
+            error={error}
+            onSave={async (document) => {
+              if (
+                await persist(
+                  document,
+                  "Payment plan saved. Record each payment from its scheduled row.",
+                )
+              ) {
+                const expenseId = document.expenses.find(
+                  (e) =>
+                    e.payment_arrangement === "installment" &&
+                    d.expenses.find((old) => old.id === e.id)
+                      ?.payment_arrangement !== "installment",
+                )?.id;
+                setPlanFilter(planExpenseId || expenseId || "");
+                setPlanExpenseId(null);
+                setActiveTab("Installments");
+              }
+            }}
+          />
+        </PlannerDialog>
+      )}
       {editor && d && (
         <PlannerDialog
-          title={`${editor.id ? "Edit" : "Add"} ${labels[editor.collection]}`}
+          title={
+            editor.collection === "payments" && !editor.id
+              ? "Record payment"
+              : `${editor.id ? "Edit" : "Add"} ${labels[editor.collection]}`
+          }
           onClose={() => setEditor(null)}
           busy={saving}
         >
           <form onSubmit={(event) => void submitEditor(event)}>
+            {editor.collection === "payments" && editor.context && (
+              <p className="admin-rsvp-setting-note">
+                {expenseName(editor.values.expense_id)}
+                {editor.values.installment_id
+                  ? ` — ${d.installments.find((i) => i.id === editor.values.installment_id)?.name}. This payment updates the schedule and expense balance automatically.`
+                  : ". Enter what you actually paid. This updates the expense balance and payment history."}
+              </p>
+            )}
             <div className="admin-form-grid">
               {editor.collection !== "payments" && (
                 <Field
@@ -991,6 +1227,56 @@ export function WeddingPlanner({
               )}
               {editor.collection === "expenses" && (
                 <>
+                  <label>
+                    Payment arrangement
+                    <select
+                      aria-label="Payment arrangement"
+                      value={editor.values.payment_arrangement ?? "flexible"}
+                      onChange={(e) =>
+                        setEditor({
+                          ...editor,
+                          values: {
+                            ...editor.values,
+                            payment_arrangement: e.target.value,
+                            confirm_flexible: "",
+                          },
+                        })
+                      }
+                    >
+                      <option value="flexible">
+                        One-time / flexible payments
+                      </option>
+                      <option value="installment">Installment plan</option>
+                    </select>
+                  </label>
+                  <p className="admin-content-help">
+                    {editor.values.payment_arrangement === "installment"
+                      ? "After saving, set up the monthly amount and dates once. Your payments already recorded are deducted automatically."
+                      : "Record deposits and payments whenever you pay. No monthly schedule is required."}
+                  </p>
+                  {editor.id &&
+                    editor.values.payment_arrangement === "flexible" &&
+                    paymentPlanTotals(d, editor.id).pending.length > 0 && (
+                      <label className="admin-checkbox">
+                        <input
+                          type="checkbox"
+                          required
+                          checked={editor.values.confirm_flexible === "true"}
+                          onChange={(e) =>
+                            setEditor({
+                              ...editor,
+                              values: {
+                                ...editor.values,
+                                confirm_flexible: String(e.target.checked),
+                              },
+                            })
+                          }
+                        />
+                        Cancel unpaid scheduled amounts and switch to flexible
+                        payments. Keep all recorded payments and schedule
+                        history.
+                      </label>
+                    )}
                   <SelectField
                     label="Category"
                     field="category_id"
@@ -1032,14 +1318,24 @@ export function WeddingPlanner({
               {(editor.collection === "payments" ||
                 editor.collection === "installments") && (
                 <>
-                  <SelectField
-                    label="Expense"
-                    field="expense_id"
-                    editor={editor}
-                    setEditor={setEditor}
-                    required
-                    options={d.expenses.map((e) => [e.id, e.name])}
-                  />
+                  {!(editor.collection === "payments" && editor.context) && (
+                    <SelectField
+                      label="Expense"
+                      field="expense_id"
+                      editor={editor}
+                      setEditor={setEditor}
+                      required
+                      options={d.expenses
+                        .filter(
+                          (e) =>
+                            editor.collection !== "payments" ||
+                            editor.id ||
+                            (e.payment_arrangement !== "installment" &&
+                              !paymentPlanTotals(d, e.id).pending.length),
+                        )
+                        .map((e) => [e.id, e.name])}
+                    />
+                  )}
                   <Field
                     label="Amount (PHP)"
                     field="amount"
@@ -1052,18 +1348,30 @@ export function WeddingPlanner({
               )}
               {editor.collection === "payments" && (
                 <>
-                  <SelectField
-                    label="Apply to installment"
-                    field="installment_id"
-                    editor={editor}
-                    setEditor={setEditor}
-                    options={d.installments
-                      .filter((i) => i.expense_id === editor.values.expense_id)
-                      .map((i) => [
-                        i.id,
-                        `${i.name} — ${displayDate(i.due_date)}`,
-                      ])}
-                  />
+                  {editor.id && (
+                    <details>
+                      <summary>
+                        Change scheduled payment link (optional)
+                      </summary>
+                      <SelectField
+                        label="Apply to installment"
+                        field="installment_id"
+                        editor={editor}
+                        setEditor={setEditor}
+                        options={d.installments
+                          .filter(
+                            (i) =>
+                              i.expense_id === editor.values.expense_id &&
+                              (!i.cancelled ||
+                                i.id === editor.values.installment_id),
+                          )
+                          .map((i) => [
+                            i.id,
+                            `${i.name} — ${displayDate(i.due_date)}`,
+                          ])}
+                      />
+                    </details>
+                  )}
                   <Field
                     label="Payment date (blank if unknown)"
                     field="paid_date"

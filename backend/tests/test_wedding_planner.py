@@ -106,6 +106,29 @@ def test_unknown_budget_stays_unknown_and_zero_cost_is_known():
     assert summary["unestimated"] == 0
 
 
+def test_flexible_default_and_cancelled_schedule_preserve_payment_totals():
+    data = ledger()
+    data["installments"][0]["cancelled"] = True
+    document = PlannerDocument.model_validate(data)
+    assert document.expenses[0].payment_arrangement == "flexible"
+    summary = summarize(document, date(2026, 11, 17))
+    assert summary["paid"] == 10000
+    assert summary["balance"] == 110001
+    assert summary["overdue"] == 0
+    assert sum(row["amount"] for row in summary["due"]) == 110001
+    assert len(document.payments) == 1
+
+
+def test_installment_arrangement_roundtrips_and_rejects_invalid_choice():
+    data = ledger()
+    data["expenses"][0]["payment_arrangement"] = "installment"
+    document = PlannerDocument.model_validate(data)
+    assert document.model_dump()["expenses"][0]["payment_arrangement"] == "installment"
+    data["expenses"][0]["payment_arrangement"] = "invalid"
+    with pytest.raises(ValidationError):
+        PlannerDocument.model_validate(data)
+
+
 def test_settling_installment_updates_expense_without_changing_forecast():
     data = ledger()
     data["payments"].append(

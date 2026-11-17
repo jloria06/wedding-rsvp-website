@@ -26,6 +26,28 @@ current Manila date; a payment due today is not overdue. Payments plus unpaid
 installments cannot exceed an expense's forecast. Refunds/overpayments are not
 supported by this first ledger. Correct costs or schedules before recording them.
 
+## Payment arrangements
+
+Choose **One-time / flexible payments** or **Installment plan** when adding or
+editing an expense. Flexible expenses accept direct payments without a schedule.
+For installment expenses, save the expense and enter the monthly amount, number
+of payments, and first due date once. Preview the generated dates and any final
+balance before saving. Existing paid amounts and unpaid scheduled amounts are
+deducted before generating the new schedule. The final monthly amount is capped
+to the remaining centavo balance; dates on the 29th–31st clamp to month end and
+return to the original day in subsequent months.
+
+Click **Record payment** on a scheduled row to update the expense, schedule, and
+payment history together. The expense and schedule link are filled automatically.
+Switching to flexible payments requires confirmation when unpaid schedules exist;
+those rows are marked cancelled, while recorded payments and paid schedule history
+remain. Cancelled schedule history can be shown from the Installments tab.
+These optional fields are stored in the existing JSON document, requiring no new
+table migration. Deploy the backend schema support before the frontend.
+
+Run `node --test tests/paymentPlans.test.mjs` from `frontend/` for focused schedule
+generation, exact-balance, month-end, and history-preservation checks.
+
 ## Workbook review
 
 Use **Review workbook** before adding expenses. The browser reads the selected

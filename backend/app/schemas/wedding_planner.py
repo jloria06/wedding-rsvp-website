@@ -1,5 +1,5 @@
 from datetime import date, datetime, timedelta, timezone
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -37,6 +37,7 @@ class Expense(PlannerModel):
     actual: Money | None = None
     due_date: date | None = None
     notes: Notes = ""
+    payment_arrangement: Literal["flexible", "installment"] = "flexible"
 
 
 class Installment(PlannerModel):
@@ -45,6 +46,7 @@ class Installment(PlannerModel):
     name: Name
     amount: Annotated[int, Field(strict=True, gt=0, le=100_000_000_000)]
     due_date: date
+    cancelled: bool = False
 
 
 class Payment(PlannerModel):
@@ -134,7 +136,7 @@ class PlannerDocument(PlannerModel):
             remaining_schedule = sum(
                 item.amount - installment_paid.get(item.id, 0)
                 for item in self.installments
-                if item.expense_id == expense.id
+                if item.expense_id == expense.id and not item.cancelled
             )
             if total_paid or scheduled.get(expense.id, 0):
                 if cost is None:
