@@ -1,0 +1,110 @@
+.planner-panel {
+  display: grid;
+  gap: 1.2rem;
+  min-width: 0;
+}
+.planner-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.planner-table {
+  min-width: 100%;
+}
+.planner-table td {
+  min-width: 7rem;
+  overflow-wrap: anywhere;
+}
+.planner-table td:first-child {
+  min-width: 12rem;
+}
+.planner-table .admin-row-actions {
+  flex-wrap: wrap;
+  margin-top: 0.3rem;
+}
+.planner-table th {
+  white-space: nowrap;
+}
+.admin-planner .admin-report-cards strong {
+  font-family: inherit;
+  font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+  overflow-wrap: anywhere;
+}
+.planner-overdue {
+  color: #8b2f3f !important;
+}
+.planner-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(2, minmax(10rem, 0.4fr));
+  gap: 0.75rem;
+}
+.planner-filters input,
+.planner-filters select,
+.planner-dialog textarea,
+.planner-schedule-review input:not([type="checkbox"]) {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.65rem;
+  background: #fff;
+  color: var(--admin-ink);
+  font: inherit;
+}
+.planner-dialog textarea {
+  resize: vertical;
+}
+.planner-dialog > p,
+.planner-dialog > label {
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.planner-dialog .admin-table-wrap {
+  margin: 1rem 0;
+  max-height: 22rem;
+  overflow: auto;
+}
+.planner-schedule-review {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+.planner-schedule-review > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 10rem 8rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+.planner-schedule-review label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.75rem;
+}
+.planner-schedule-review input[type="checkbox"] {
+  width: auto;
+  min-height: auto;
+}
+.planner-dialog > .admin-checkbox {
+  display: flex;
+  gap: 0.5rem;
+}
+.planner-dialog > .admin-checkbox input {
+  width: auto;
+  min-height: auto;
+}
+@media (max-width: 1050px) {
+  .planner-overview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .planner-filters,
+  .planner-schedule-review > div {
+    grid-template-columns: 1fr;
+  }
+  .admin-planner .admin-subsection-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

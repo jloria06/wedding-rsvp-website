@@ -474,7 +474,7 @@ function AdminLayout({
         ) : location.pathname.startsWith("/admin/rsvps") ? (
           <RSVPManagement accessToken={accessToken} role={profile.role} />
         ) : location.pathname.startsWith("/admin/planner") ? (
-          <WeddingPlanner />
+          <WeddingPlanner accessToken={accessToken} role={profile.role} />
         ) : location.pathname.startsWith("/admin/content") ? (
           <ContentManagement accessToken={accessToken} role={profile.role} />
         ) : location.pathname.startsWith("/admin/seating") ? (

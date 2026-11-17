@@ -11,6 +11,7 @@ from app.api.admin import (
     admin_rsvp_router,
     admin_seating_router,
 )
+from app.api.admin.planner import router as admin_planner_router
 from app.api.public import (
     guest_router,
     health_router,
@@ -19,6 +20,7 @@ from app.api.public import (
 )
 
 api_router = APIRouter(prefix="/api")
+api_router.include_router(admin_planner_router, prefix="/admin")
 
 api_router.include_router(health_router)
 api_router.include_router(guest_router)

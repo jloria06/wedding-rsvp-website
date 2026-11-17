@@ -16,6 +16,7 @@ from app.models.mixins import SoftDeleteMixin, TimestampMixin
 from app.models.rsvp import RSVP
 from app.models.seating import SeatAssignment, SeatingTable
 from app.models.wedding_content import WeddingContent
+from app.models.wedding_planner import WeddingPlanner
 
 __all__ = [
     "AdminRole",
@@ -36,4 +37,5 @@ __all__ = [
     "SoftDeleteMixin",
     "TimestampMixin",
     "WeddingContent",
+    "WeddingPlanner",
 ]
