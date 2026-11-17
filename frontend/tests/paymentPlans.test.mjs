@@ -152,5 +152,21 @@ test("invalid monthly agreements are rejected before saving", () => {
     );
   const unknown = document();
   unknown.expenses[0].actual = null;
-  assert.throws(() => previewMonthlyPlan(unknown, "e", input), /cost first/);
+  assert.throws(
+    () => previewMonthlyPlan(unknown, "e", input),
+    /actual price first/,
+  );
+});
+
+test("legacy estimates never become actual prices or enable a new payment plan", () => {
+  const d = document();
+  d.expenses[0].estimate = 9000000;
+  d.expenses[0].actual = null;
+  const previous = structuredClone(d);
+  assert.equal(paymentPlanTotals(d, "e").cost, null);
+  assert.equal(paymentPlanTotals(d, "e").balance, null);
+  assert.throws(() => previewMonthlyPlan(d, "e", input), /actual price first/);
+  validatePlannerDraft(d, previous);
+  d.payments[0].amount += 1;
+  assert.throws(() => validatePlannerDraft(d, previous), /actual price/);
 });

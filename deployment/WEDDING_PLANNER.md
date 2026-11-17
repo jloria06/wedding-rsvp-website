@@ -13,10 +13,15 @@ A stale revision receives HTTP 409; reload before retrying. An empty planner is
 returned without inserting a row until the first save. There is no automatic seed
 of private workbook data in migrations or source code.
 
-Amounts are integer PHP centavos. Blank budgets and estimates remain unknown.
-Expense forecast = agreed cost when present, otherwise estimate. Outstanding =
-forecast minus recorded payments. Budget variance = category budget minus forecast.
-Unknown expense costs are counted and displayed as incomplete forecasts.
+Amounts are integer PHP centavos. Only actual prices contribute to costs,
+outstanding balances, and pending-payment totals. Missing actual prices display
+"Price not set"; estimates are never used as a fallback or converted into actuals.
+Legacy estimate/budget fields remain stored for compatibility but are hidden and
+ignored in calculations. The legacy API `forecast` key now contains actual cost.
+Payments remain in history and in Total paid even if an old expense has no actual
+price. Its unknown balance is excluded rather than subtracted from other expenses.
+Unchanged legacy payment/schedule history can be saved, but new financial activity
+and clearing an existing paid expense's price require an actual price first.
 
 Installments are planned payments, not additional costs. A payment linked to an
 installment reduces both balances. Pending monthly cash requirements include

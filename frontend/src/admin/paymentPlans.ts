@@ -5,7 +5,7 @@ export function paymentPlanTotals(
   expenseId: string,
 ) {
   const expense = document.expenses.find((e) => e.id === expenseId);
-  const cost = expense?.actual ?? expense?.estimate ?? null;
+  const cost = expense?.actual ?? null;
   const paid = document.payments
     .filter((p) => p.expense_id === expenseId)
     .reduce((sum, p) => sum + p.amount, 0);
@@ -70,7 +70,7 @@ export function previewMonthlyPlan(
 ): Omit<PlannerInstallment, "id">[] {
   const totals = paymentPlanTotals(document, expenseId);
   if (totals.unscheduled === null)
-    throw new Error("Enter the expense's agreed or estimated cost first.");
+    throw new Error("Enter the expense's actual price first.");
   if (totals.unscheduled <= 0)
     throw new Error(
       "This balance is already paid or scheduled. Your existing schedule is shown below.",

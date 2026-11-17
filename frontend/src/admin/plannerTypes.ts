@@ -91,7 +91,7 @@ const peso = new Intl.NumberFormat("en-PH", {
   currency: "PHP",
 });
 export const money = (cents: number | null | undefined) =>
-  cents == null ? "Not estimated" : peso.format(cents / 100);
+  cents == null ? "Price not set" : peso.format(cents / 100);
 export const moneyInput = (cents: number | null | undefined) =>
   cents == null ? "" : (cents / 100).toFixed(2);
 export const manilaToday = () =>
@@ -120,7 +120,10 @@ export function parseMoney(value: string): number | null {
   return cents;
 }
 
-export function validatePlannerDraft(document: PlannerDocument) {
+export function validatePlannerDraft(
+  document: PlannerDocument,
+  previous?: PlannerDocument,
+) {
   const expenseIds = new Set(document.expenses.map((e) => e.id));
   const categoryIds = new Set(document.categories.map((c) => c.id));
   const vendorIds = new Set(document.vendors.map((v) => v.id));
@@ -167,7 +170,7 @@ export function validatePlannerDraft(document: PlannerDocument) {
       throw new Error("Select an existing category for every expense.");
     if (e.vendor_id && !vendorIds.has(e.vendor_id))
       throw new Error("Reassign linked expenses before removing this vendor.");
-    const cost = e.actual ?? e.estimate;
+    const cost = e.actual;
     const paid = document.payments
       .filter((p) => p.expense_id === e.id)
       .reduce((sum, p) => sum + p.amount, 0);
@@ -182,10 +185,41 @@ export function validatePlannerDraft(document: PlannerDocument) {
             .reduce((total, p) => total + p.amount, 0),
         0,
       );
-    if ((paid || scheduled) && cost === null)
+    if ((paid || scheduled) && cost === null) {
+      const oldExpense = previous?.expenses.find((item) => item.id === e.id);
+      const paymentsUnchanged = document.payments
+        .filter((p) => p.expense_id === e.id)
+        .every((p) =>
+          previous?.payments.some(
+            (old) =>
+              old.id === p.id &&
+              old.expense_id === p.expense_id &&
+              old.amount === p.amount &&
+              old.installment_id === p.installment_id,
+          ),
+        );
+      const scheduleUnchanged = document.installments
+        .filter((i) => i.expense_id === e.id && !i.cancelled)
+        .every((i) =>
+          previous?.installments.some(
+            (old) =>
+              old.id === i.id &&
+              old.expense_id === i.expense_id &&
+              old.amount === i.amount &&
+              old.due_date === i.due_date,
+          ),
+        );
+      if (
+        oldExpense &&
+        oldExpense.actual === null &&
+        paymentsUnchanged &&
+        scheduleUnchanged
+      )
+        continue;
       throw new Error(
-        `Set the estimated or agreed cost for ${e.name} before adding payments or installments.`,
+        `Set the actual price for ${e.name} before changing payments or installments.`,
       );
+    }
     if (paid + scheduled > (cost ?? 0))
       throw new Error(
         `Payments and unpaid installments exceed the cost for ${e.name}. Link the payment to its installment or adjust the schedule first.`,

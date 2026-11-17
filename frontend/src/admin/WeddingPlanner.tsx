@@ -49,7 +49,7 @@ type Editor = {
   values: Record<string, string>;
 };
 const labels: Record<Collection, string> = {
-  categories: "budget category",
+  categories: "expense category",
   expenses: "expense",
   payments: "payment",
   installments: "installment",
@@ -131,7 +131,7 @@ export function WeddingPlanner({
     setError("");
     setSuccess("");
     try {
-      validatePlannerDraft(document);
+      validatePlannerDraft(document, planner.document);
       setPlanner(await savePlanner(accessToken, planner.revision, document));
       setSuccess(message);
       return true;
@@ -515,8 +515,7 @@ export function WeddingPlanner({
               <>
                 <div className="admin-report-cards">
                   {[
-                    ["Estimated budget", money(s.budget)],
-                    ["Forecast total cost", money(s.forecast)],
+                    ["Total Actual Cost", money(s.forecast)],
                     ["Total paid", money(s.paid)],
                     ["Outstanding balance", money(s.balance)],
                     ["Overdue payments", money(s.overdue)],
@@ -532,11 +531,11 @@ export function WeddingPlanner({
                   ))}
                 </div>
                 <p className="admin-rsvp-setting-note">
-                  Forecast uses agreed cost when available, otherwise the item
-                  estimate. {s.unestimated} expense(s) have no cost yet;{" "}
-                  {s.unbudgeted} category budget(s) are unset. Totals are
-                  incomplete until those amounts are entered. Dates use
-                  Asia/Manila; as of {displayDate(s.as_of)}.
+                  Totals use actual prices only. {s.unestimated} expense(s) show
+                  Price not set and are excluded from cost, balance, and
+                  payment-due totals until an actual price is entered. All
+                  recorded payments remain in Total paid. Dates use Asia/Manila;
+                  as of {displayDate(s.as_of)}.
                 </p>
                 {!d.expenses.length && (
                   <div className="admin-content-card">
@@ -597,17 +596,15 @@ export function WeddingPlanner({
             {activeTab === "Budget" && (
               <>
                 <div className="admin-subsection-heading">
-                  <h3>Budget by category</h3>
+                  <h3>Actual cost by category</h3>
                   {add("categories", "Add category")}
                 </div>
                 <Table
                   headings={[
                     "Category",
-                    "Estimated budget",
-                    "Forecast",
+                    "Actual cost",
                     "Paid",
                     "Balance",
-                    "Under / (over)",
                     "Actions",
                   ]}
                   empty="No categories."
@@ -618,15 +615,13 @@ export function WeddingPlanner({
                         {c.name}
                         <small>
                           {c.unestimated
-                            ? `${c.unestimated} uncosted item(s)`
+                            ? `${c.unestimated} price(s) not set`
                             : ""}
                         </small>
                       </td>
-                      <td>{money(c.budget)}</td>
                       <td>{money(c.forecast)}</td>
                       <td>{money(c.paid)}</td>
                       <td>{money(c.balance)}</td>
-                      <td>{money(c.variance)}</td>
                       <td>
                         {actions(
                           "categories",
@@ -639,8 +634,8 @@ export function WeddingPlanner({
                   ))}
                 </Table>
                 <p className="admin-content-help">
-                  Positive variance is under budget; negative is over budget.
-                  Unset budgets remain “Not estimated”.
+                  Category totals use actual prices only. Items marked Price not
+                  set are excluded until their actual prices are entered.
                 </p>
               </>
             )}
@@ -677,15 +672,14 @@ export function WeddingPlanner({
                     <option value="all">All statuses</option>
                     <option value="pending">Pending balance</option>
                     <option value="paid">Fully paid</option>
-                    <option value="unknown">Not estimated</option>
+                    <option value="unknown">Price not set</option>
                   </select>
                 </div>
                 <Table
                   headings={[
                     "Expense / vendor",
                     "Category",
-                    "Estimate",
-                    "Agreed cost",
+                    "Actual price",
                     "Paid",
                     "Balance",
                     "Due",
@@ -729,10 +723,7 @@ export function WeddingPlanner({
                               ?.name
                           }
                         </td>
-                        <td>{money(e.estimate)}</td>
-                        <td>
-                          {e.actual === null ? "Not agreed" : money(e.actual)}
-                        </td>
+                        <td>{money(e.actual)}</td>
                         <td>{money(s.expenses[e.id]?.paid)}</td>
                         <td>{money(s.expenses[e.id]?.balance)}</td>
                         <td>{displayDate(e.due_date)}</td>
@@ -1044,7 +1035,7 @@ export function WeddingPlanner({
                   headings={[
                     "Vendor",
                     "Service / contact",
-                    "Forecast",
+                    "Actual cost",
                     "Paid",
                     "Outstanding",
                     "Actions",
@@ -1216,15 +1207,6 @@ export function WeddingPlanner({
                   maxLength={editor.collection === "checklist" ? 500 : 200}
                 />
               )}
-              {editor.collection === "categories" && (
-                <Field
-                  label="Estimated budget (PHP)"
-                  field="budget"
-                  editor={editor}
-                  setEditor={setEditor}
-                  amount
-                />
-              )}
               {editor.collection === "expenses" && (
                 <>
                   <label>
@@ -1293,14 +1275,7 @@ export function WeddingPlanner({
                     options={d.vendors.map((v) => [v.id, v.name])}
                   />
                   <Field
-                    label="Estimated cost (PHP)"
-                    field="estimate"
-                    editor={editor}
-                    setEditor={setEditor}
-                    amount
-                  />
-                  <Field
-                    label="Agreed cost (PHP)"
+                    label="Actual price (PHP)"
                     field="actual"
                     editor={editor}
                     setEditor={setEditor}

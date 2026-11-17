@@ -138,7 +138,7 @@ export async function reviewPlannerWorkbook(
   const cost = document.expenses.reduce((sum, e) => sum + (e.actual ?? 0), 0);
   const paid = document.payments.reduce((sum, p) => sum + p.amount, 0);
   const warnings = [
-    "Import uses item-level costs and paid amounts from Wedding Budget. Blank estimates remain unknown. No vendors are inferred.",
+    "Import uses actual item costs and paid amounts from Wedding Budget. Blank actual prices remain Price not set. No vendors are inferred.",
     "Opening paid balances are aggregates with unknown payment dates. They must not be entered again as new payments.",
   ];
   const summary = workbook.Sheets["Summary"];

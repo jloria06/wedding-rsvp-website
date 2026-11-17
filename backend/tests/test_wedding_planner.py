@@ -15,7 +15,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.api.admin.planner import router
 from app.core.exception_handlers import register_exception_handlers
-from app.core.exceptions import ConflictError
+from app.core.exceptions import ApplicationError, ConflictError
 from app.database.base import Base
 from app.database.session import get_database_session
 from app.models import Administrator, AdminRole, AdminStatus, AuditLog, WeddingPlanner
@@ -43,6 +43,7 @@ def ledger() -> dict:
                 "name": "Cake",
                 "category_id": "reception",
                 "estimate": 20000,
+                "actual": 20000,
             },
             {"id": "flowers", "name": "Flowers", "category_id": "reception"},
         ],
@@ -87,7 +88,8 @@ def test_forecast_uses_agreed_cost_and_does_not_double_count_installments():
     assert summary["balance"] == 110001
     assert summary["overdue"] == 20000
     assert summary["unestimated"] == 1
-    assert summary["categories"][0]["variance"] == 29999
+    assert summary["categories"][0]["variance"] is None
+    assert summary["budget"] is None
     assert summary["monthly"] == [
         {"month": "2026-11", "amount": 20000},
         {"month": "2027-03", "amount": 70001},
@@ -104,6 +106,39 @@ def test_unknown_budget_stays_unknown_and_zero_cost_is_known():
     assert summary["budget"] is None
     assert summary["categories"][0]["variance"] is None
     assert summary["unestimated"] == 0
+
+
+def test_estimates_are_ignored_without_subtracting_unpriced_payments_from_other_costs():
+    data = ledger()
+    data["expenses"][0]["actual"] = None
+    document = PlannerDocument.model_validate(data)
+    summary = summarize(document, date(2026, 11, 17))
+    assert summary["forecast"] == 20000
+    assert summary["paid"] == 10000
+    assert summary["balance"] == 20000
+    assert summary["expenses"]["venue"]["forecast"] is None
+    assert summary["expenses"]["venue"]["balance"] is None
+    assert summary["overdue"] == 0
+    assert summary["unestimated"] == 2
+    assert summary["monthly"] == [{"month": "Undated", "amount": 20000}]
+
+
+def test_legacy_unpriced_history_is_preserved_but_new_payments_require_actual(session):
+    data = ledger()
+    data["expenses"][0]["actual"] = None
+    session.add(WeddingPlanner(id=1, revision=1, document=data, updated_by_id=1))
+    session.commit()
+    service = WeddingPlannerService(session)
+    assert service.read()["summary"]["expenses"]["venue"]["balance"] is None
+    document = PlannerDocument.model_validate(data)
+    service.save(PlannerSaveRequest(revision=1, document=document), 1)
+    session.commit()
+    document.payments[0].amount += 1
+    with pytest.raises(ApplicationError, match="actual price"):
+        service.save(PlannerSaveRequest(revision=2, document=document), 1)
+    document.expenses[0].actual = 100001
+    saved = service.save(PlannerSaveRequest(revision=2, document=document), 1)
+    assert saved["summary"]["expenses"]["venue"]["paid"] == 10001
 
 
 def test_flexible_default_and_cancelled_schedule_preserve_payment_totals():
