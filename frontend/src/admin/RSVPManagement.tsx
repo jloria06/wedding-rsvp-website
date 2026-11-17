@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { ApiError } from "../lib/api";
+import { GuestGroupSummary } from "./GuestGroupSummary";
 import {
   deleteAdministratorRsvp,
   exportAdministratorRsvps,
@@ -262,6 +263,7 @@ export function RSVPManagement({ accessToken, role }: { accessToken: string; rol
         <div><p className="admin-status-label">Phase 4</p><h2 id="rsvp-management-title">RSVP management</h2><p>{rsvps.filter((item) => item.status !== "pending").length} responses across {rsvps.length} invitations</p></div>
         <button type="button" onClick={() => void exportCsv()} disabled={isExporting}>{isExporting ? "Exporting..." : "Export CSV"}</button>
       </div>
+      {!isLoading && (!errorMessage || rsvps.length > 0) ? <GuestGroupSummary rsvps={rsvps} /> : null}
       <div className="admin-guest-filters admin-rsvp-filters">
         <input aria-label="Search RSVPs" placeholder="Search guest, code, or guest group" value={search} onChange={(event) => setSearch(event.target.value)} />
         <select aria-label="Filter RSVP status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as RSVPStatus | "all")}><option value="all">All RSVP statuses</option><option value="pending">Pending</option><option value="attending">Attending</option><option value="not_attending">Declined</option></select>
