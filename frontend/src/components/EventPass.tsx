@@ -6,7 +6,6 @@ import "./EventPass.css";
 function invitationUrl(invitationCode: string): string {
   const url = new URL(window.location.origin);
   url.searchParams.set("invite", invitationCode);
-  url.hash = "rsvp";
   return url.toString();
 }
 

@@ -321,7 +321,15 @@ function App() {
     }
 
     invitationLinkProcessed.current = true;
-    setInvitationOpened(true);
+    // Old printed QR codes may include #rsvp. Keep the code, but start at the cover.
+    if (window.location.hash) {
+      window.history.replaceState(
+        window.history.state,
+        "",
+        window.location.pathname + window.location.search,
+      );
+    }
+    window.scrollTo({ top: 0, behavior: "instant" });
 
     void verifyInvitationCode(invitationCode)
       .then((response) => {
@@ -332,22 +340,6 @@ function App() {
         setVerifiedGuest(null);
       });
   }, []);
-
-  useEffect(() => {
-    if (
-      !siteReady ||
-      !invitationOpened ||
-      !new URLSearchParams(window.location.search).has("invite")
-    ) {
-      return;
-    }
-
-    const frame = window.requestAnimationFrame(() => {
-      document.getElementById("rsvp")?.scrollIntoView({ behavior: "smooth" });
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [invitationOpened, siteReady]);
 
   /* =======================================================
      INITIAL LOADING SCREEN
@@ -813,6 +805,9 @@ function App() {
 
   async function openInvitation() {
     await startMusic();
+    if (new URLSearchParams(window.location.search).get("invite")?.trim()) {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
     setInvitationOpened(true);
   }
 
